@@ -5,7 +5,7 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.3";
+  const APP_VERSION = "0.4";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
@@ -346,6 +346,7 @@
     $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.go === screen));
     const titles = { home: "cycle", log: "Daily log", insights: "Your review", learn: "Learn", settings: "Settings" };
     $("#topbarTitle").textContent = titles[screen] || "cycle";
+    $("#topbarTagline").hidden = screen !== "home";
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (screen === "insights") renderReview();
     if (screen === "log") renderLog();
