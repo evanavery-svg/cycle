@@ -15,7 +15,7 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=1" />
+  <link rel="stylesheet" href="./css/styles.css?v=2" />
 
   <title>cycle</title>
 </head>
@@ -198,8 +198,25 @@
           <p class="disclaimer">⚠️ I'm an app, not a doctor. This is a simple awareness checklist and <strong>not</strong> a diagnosis. If anything resonates, please talk to a healthcare professional.</p>
           <div id="pcosQuiz"></div>
         </div>
+
+        <div class="card section">
+          <h3>Your data 📦</h3>
+          <p class="lead">Everything you log lives privately on this device. Back it up or move it to another app anytime.</p>
+          <div class="data-btns">
+            <button class="cta ghost" id="exportTxt">⬇︎ Export as TXT</button>
+            <button class="cta ghost" id="exportJson">⬇︎ Export as JSON</button>
+            <button class="cta ghost" id="importBtn">⬆︎ Import data</button>
+          </div>
+          <p class="hint"><strong>TXT</strong> is plain text that's easy to read and review. <strong>JSON</strong> is machine-readable data — best for transferring to another app.</p>
+          <input type="file" id="importFile" accept=".json,application/json" hidden />
+        </div>
       </section>
     </main>
+
+    <footer class="app-footer">
+      <span class="version">cycle <span id="appVersion">v0.1</span></span>
+      <span class="copyright">© <span id="copyYear">2026</span> Avery LLC. All rights reserved.</span>
+    </footer>
 
     <!-- Bottom nav -->
     <nav class="tabbar">
@@ -261,7 +278,7 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script src="./js/app.js?v=1"></script>
+  <script src="./js/app.js?v=2"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

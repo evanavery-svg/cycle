@@ -4,6 +4,9 @@
 (function () {
   "use strict";
 
+  // ---------- App meta ----------
+  const APP_VERSION = "0.1";
+
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
   const DEFAULTS = { periods: [], logs: {}, settings: { cycleLength: 28, periodLength: 5 }, pcos: {} };
@@ -752,12 +755,141 @@
     localStorage.setItem("cycle.installDismissed", "1");
   });
 
+  // ---------- Import / Export ----------
+  function download(filename, text, mime) {
+    const blob = new Blob([text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = el("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function stamp() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function exportJSON() {
+    const payload = {
+      app: "cycle",
+      version: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      data: {
+        periods: state.periods,
+        logs: state.logs,
+        settings: state.settings,
+        pcos: state.pcos
+      }
+    };
+    download(`cycle-data-${stamp()}.json`, JSON.stringify(payload, null, 2), "application/json");
+    toast("JSON exported");
+  }
+
+  function exportTXT() {
+    const L = [];
+    L.push("cycle — data export");
+    L.push("Version " + APP_VERSION);
+    L.push("Exported: " + prettyDate(todayISO()) + ", " + new Date().getFullYear());
+    L.push("");
+    L.push("=== SETTINGS ===");
+    L.push("Average cycle length: " + avgCycleLength() + " days");
+    L.push("Average period length: " + avgPeriodLength() + " days");
+    L.push("");
+
+    const ps = sortedPeriods();
+    L.push(`=== PERIODS (${ps.length}) ===`);
+    if (!ps.length) L.push("(none logged yet)");
+    ps.forEach(p => {
+      if (p.end) {
+        const len = daysBetween(p.start, p.end) + 1;
+        L.push(`- ${prettyDate(p.start)} -> ${prettyDate(p.end)} (${len} day${len === 1 ? "" : "s"})`);
+      } else {
+        L.push(`- ${prettyDate(p.start)} (start only)`);
+      }
+    });
+    L.push("");
+
+    const days = Object.keys(state.logs).filter(d => hasLog(d)).sort();
+    L.push(`=== DAILY LOGS (${days.length}) ===`);
+    if (!days.length) L.push("(none logged yet)");
+    days.forEach(d => {
+      const l = state.logs[d];
+      L.push(`[${prettyDate(d)}]`);
+      if (l.flow) L.push("  Flow: " + l.flow);
+      if (l.symptoms && l.symptoms.length) L.push("  Symptoms: " + l.symptoms.join(", "));
+      if (l.moods && l.moods.length) L.push("  Moods: " + l.moods.join(", "));
+      if (l.sex) L.push("  Sex: " + l.sex);
+      if (l.sexDrive) L.push("  Sex drive: " + l.sexDrive);
+      if (l.discharge) L.push("  Discharge: " + l.discharge);
+      if (l.digestion) L.push("  Digestion: " + l.digestion);
+      if (l.notes && l.notes.trim()) L.push("  Notes: " + l.notes.trim());
+      L.push("");
+    });
+
+    const picked = PCOS_QUESTIONS.filter((_, i) => state.pcos[i]);
+    L.push(`=== PCOS SELF-CHECK ===`);
+    L.push(`Selected ${picked.length} of ${PCOS_QUESTIONS.length} statements` + (picked.length ? ":" : "."));
+    picked.forEach(q => L.push("- " + q));
+    L.push("(Reminder: this is an awareness checklist, not a diagnosis.)");
+    L.push("");
+
+    L.push("This file is a human-readable summary. To transfer your data to");
+    L.push("another app, use the JSON export instead.");
+
+    download(`cycle-data-${stamp()}.txt`, L.join("\n"), "text/plain");
+    toast("TXT exported");
+  }
+
+  function importJSON(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const d = parsed.data || parsed; // accept raw or wrapped
+        if (!d || typeof d !== "object" || (!d.periods && !d.logs)) {
+          toast("Not a valid cycle file");
+          return;
+        }
+        if (!confirm("Import will replace your current data on this device. Continue?")) return;
+        state = Object.assign(structuredClone(DEFAULTS), {
+          periods: Array.isArray(d.periods) ? d.periods : [],
+          logs: d.logs && typeof d.logs === "object" ? d.logs : {},
+          settings: Object.assign(structuredClone(DEFAULTS.settings), d.settings || {}),
+          pcos: d.pcos && typeof d.pcos === "object" ? d.pcos : {}
+        });
+        save();
+        renderCalendar();
+        renderLog();
+        renderPcos();
+        toast("Data imported 💗");
+      } catch (e) {
+        toast("Couldn't read that file");
+      }
+    };
+    reader.onerror = () => toast("Couldn't read that file");
+    reader.readAsText(file);
+  }
+
+  $("#exportTxt").addEventListener("click", exportTXT);
+  $("#exportJson").addEventListener("click", exportJSON);
+  $("#importBtn").addEventListener("click", () => $("#importFile").click());
+  $("#importFile").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) importJSON(f);
+    e.target.value = ""; // allow re-importing the same file
+  });
+
   // ---------- Boot ----------
   function boot() {
     const n = new Date();
     calYear = n.getFullYear();
     calMonth = n.getMonth();
     logDateStr = todayISO();
+    $("#appVersion").textContent = "v" + APP_VERSION;
+    $("#copyYear").textContent = n.getFullYear();
     renderCalendar();
     renderLog();
     // Hide splash
