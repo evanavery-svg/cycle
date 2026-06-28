@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#ff7eb3" />
+  <meta name="description" content="cycle — a gentle period & cycle tracker" />
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="cycle" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/styles.css?v=1" />
+
+  <title>cycle</title>
+</head>
+<body>
+  <!-- Splash -->
+  <div id="splash" class="splash">
+    <div class="splash-mark">
+      <div class="bloom">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="splash-name">cycle</div>
+    </div>
+  </div>
+
+  <!-- App shell -->
+  <div id="app" class="app" hidden>
+    <header class="topbar">
+      <div class="topbar-title" id="topbarTitle">cycle</div>
+      <button class="icon-btn" id="todayBtn" aria-label="Jump to today">Today</button>
+    </header>
+
+    <main class="screens">
+      <!-- HOME / CALENDAR -->
+      <section class="screen" id="screen-home" data-screen="home">
+        <div class="hero card" id="phaseHero">
+          <div class="hero-ring" id="heroRing">
+            <svg viewBox="0 0 120 120" class="ring-svg">
+              <circle class="ring-bg" cx="60" cy="60" r="52" />
+              <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52" />
+            </svg>
+            <div class="ring-center">
+              <div class="ring-day" id="ringDay">–</div>
+              <div class="ring-label" id="ringLabel">cycle day</div>
+            </div>
+          </div>
+          <div class="hero-info">
+            <div class="hero-phase" id="heroPhase">Welcome</div>
+            <div class="hero-sub" id="heroSub">Log your first period to begin</div>
+            <div class="hero-chips" id="heroChips"></div>
+          </div>
+        </div>
+
+        <div class="cal card">
+          <div class="cal-head">
+            <button class="cal-nav" id="prevMonth" aria-label="Previous month">‹</button>
+            <div class="cal-month" id="calMonth">—</div>
+            <button class="cal-nav" id="nextMonth" aria-label="Next month">›</button>
+          </div>
+          <div class="cal-weekdays">
+            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-legend">
+            <span class="lg"><i class="dot dot-period"></i>Period</span>
+            <span class="lg"><i class="dot dot-predicted"></i>Predicted</span>
+            <span class="lg"><i class="dot dot-fertile"></i>Fertile</span>
+            <span class="lg"><i class="dot dot-ovul"></i>Ovulation</span>
+            <span class="lg"><i class="dot dot-logged"></i>Logged</span>
+          </div>
+        </div>
+
+        <button class="cta" id="logPeriodCta">＋ Log period</button>
+      </section>
+
+      <!-- LOG -->
+      <section class="screen" id="screen-log" data-screen="log" hidden>
+        <div class="log-datebar card">
+          <button class="date-step" id="logPrevDay" aria-label="Previous day">‹</button>
+          <div class="date-main">
+            <input type="date" id="logDate" class="date-input" />
+            <div class="date-pretty" id="logDatePretty"></div>
+          </div>
+          <button class="date-step" id="logNextDay" aria-label="Next day">›</button>
+        </div>
+
+        <div class="card section">
+          <h3>Period flow</h3>
+          <div class="seg" id="flowSeg" data-group="flow">
+            <button data-val="">None</button>
+            <button data-val="spotting">Spotting</button>
+            <button data-val="light">Light</button>
+            <button data-val="medium">Medium</button>
+            <button data-val="heavy">Heavy</button>
+          </div>
+          <p class="hint">Tip: tap “Log period” on the home tab to set a whole period range — including past dates.</p>
+        </div>
+
+        <div class="card section">
+          <h3>Symptoms</h3>
+          <div class="chip-wrap" id="symptomWrap"></div>
+        </div>
+
+        <div class="card section">
+          <h3>Mood</h3>
+          <div class="chip-wrap" id="moodWrap"></div>
+        </div>
+
+        <div class="card section">
+          <h3>Intimacy</h3>
+          <div class="sub">Sex</div>
+          <div class="seg" data-group="sex">
+            <button data-val="">—</button>
+            <button data-val="none">None</button>
+            <button data-val="protected">Protected</button>
+            <button data-val="unprotected">Unprotected</button>
+          </div>
+          <div class="sub">Sex drive</div>
+          <div class="seg" data-group="sexDrive">
+            <button data-val="">—</button>
+            <button data-val="low">Low</button>
+            <button data-val="medium">Medium</button>
+            <button data-val="high">High</button>
+          </div>
+        </div>
+
+        <div class="card section">
+          <h3>Vaginal discharge</h3>
+          <div class="seg wrap" data-group="discharge">
+            <button data-val="">—</button>
+            <button data-val="none">None / dry</button>
+            <button data-val="sticky">Sticky</button>
+            <button data-val="creamy">Creamy</button>
+            <button data-val="eggwhite">Egg white</button>
+            <button data-val="watery">Watery</button>
+            <button data-val="spotting">Spotting</button>
+            <button data-val="unusual">Unusual</button>
+          </div>
+        </div>
+
+        <div class="card section">
+          <h3>Digestion</h3>
+          <div class="seg wrap" data-group="digestion">
+            <button data-val="">—</button>
+            <button data-val="normal">Normal</button>
+            <button data-val="bloated">Bloated</button>
+            <button data-val="gassy">Gassy</button>
+            <button data-val="constipated">Constipated</button>
+            <button data-val="loose">Loose</button>
+            <button data-val="cramps">Cramps</button>
+            <button data-val="nausea">Nausea</button>
+          </div>
+        </div>
+
+        <div class="card section">
+          <h3>Notes</h3>
+          <textarea id="logNotes" class="notes" rows="3" placeholder="Anything you want to remember…"></textarea>
+        </div>
+
+        <div class="save-row">
+          <button class="cta ghost" id="clearDay">Clear day</button>
+          <button class="cta" id="saveLog">Save</button>
+        </div>
+      </section>
+
+      <!-- INSIGHTS -->
+      <section class="screen" id="screen-insights" data-screen="insights" hidden>
+        <div class="seg switch" id="reviewSwitch">
+          <button data-val="month" class="active">Monthly</button>
+          <button data-val="year">Yearly</button>
+        </div>
+        <div id="reviewBody"></div>
+      </section>
+
+      <!-- LEARN -->
+      <section class="screen" id="screen-learn" data-screen="learn" hidden>
+        <div class="card section">
+          <h3>Move with your cycle 🤸‍♀️</h3>
+          <p class="lead">Gentle guidance by phase — listen to your body first.</p>
+          <div class="accordion" id="exerciseAcc"></div>
+        </div>
+
+        <div class="card section">
+          <h3>Eat with your cycle 🍓</h3>
+          <p class="lead">Foods that tend to feel good during your period.</p>
+          <div class="accordion" id="foodAcc"></div>
+        </div>
+
+        <div class="card section pcos">
+          <h3>PCOS self-check 🩺</h3>
+          <p class="disclaimer">⚠️ I'm an app, not a doctor. This is a simple awareness checklist and <strong>not</strong> a diagnosis. If anything resonates, please talk to a healthcare professional.</p>
+          <div id="pcosQuiz"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom nav -->
+    <nav class="tabbar">
+      <button class="tab active" data-go="home">
+        <svg viewBox="0 0 24 24"><path d="M7 4h10a2 2 0 012 2v13a1 1 0 01-1.4.9L12 18l-5.6 1.9A1 1 0 015 19V6a2 2 0 012-2z"/></svg>
+        <span>Calendar</span>
+      </button>
+      <button class="tab" data-go="log">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Log</span>
+      </button>
+      <button class="tab" data-go="insights">
+        <svg viewBox="0 0 24 24"><path d="M5 19V10M12 19V5M19 19v-6"/></svg>
+        <span>Review</span>
+      </button>
+      <button class="tab" data-go="learn">
+        <svg viewBox="0 0 24 24"><path d="M12 3l8 4-8 4-8-4 8-4zM4 12l8 4 8-4M4 16l8 4 8-4"/></svg>
+        <span>Learn</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Log-period modal -->
+  <div class="modal-backdrop" id="periodModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+      <div class="modal-handle"></div>
+      <h2 id="pmTitle">Log a period</h2>
+      <p class="hint">Pick the days your period started and ended. You can log past or current periods.</p>
+      <label class="field">
+        <span>Started</span>
+        <input type="date" id="pmStart" />
+      </label>
+      <label class="field">
+        <span>Ended <em>(optional)</em></span>
+        <input type="date" id="pmEnd" />
+      </label>
+      <div id="pmExisting" class="pm-existing"></div>
+      <div class="modal-actions">
+        <button class="cta ghost" id="pmCancel">Cancel</button>
+        <button class="cta" id="pmSave">Save period</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Install hint -->
+  <div class="install-toast" id="installToast" hidden>
+    <button class="install-close" id="installClose" aria-label="Dismiss">✕</button>
+    <div class="install-row">
+      <div class="install-icon">
+        <div class="bloom small"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="install-text">
+        <strong>Add cycle to your Home Screen</strong>
+        <span id="installSteps">Tap the Share button <span class="ios-share">▵</span> then “Add to Home Screen”.</span>
+      </div>
+    </div>
+    <button class="cta full" id="installAndroid" hidden>Install app</button>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="./js/app.js?v=1"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+          // Force an update check on every launch.
+          reg.update();
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version ready — activate immediately.
+                nw.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+        });
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+      });
+    }
+  </script>
+</body>
+</html>
