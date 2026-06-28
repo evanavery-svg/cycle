@@ -6,6 +6,11 @@
   <meta name="theme-color" content="#ff7eb3" />
   <meta name="description" content="cycle — a gentle period & cycle tracker" />
 
+  <!-- Security: lock everything to this origin. No external scripts, no network
+       calls, no framing. Data stays on the device. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+  <meta name="referrer" content="no-referrer" />
+
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -15,7 +20,7 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=5" />
+  <link rel="stylesheet" href="./css/styles.css?v=6" />
 
   <title>cycle</title>
 </head>
@@ -462,32 +467,7 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script src="./js/app.js?v=5"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
-          // Force an update check on every launch.
-          reg.update();
-          reg.addEventListener('updatefound', () => {
-            const nw = reg.installing;
-            if (!nw) return;
-            nw.addEventListener('statechange', () => {
-              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                // New version ready — activate immediately.
-                nw.postMessage({ type: 'SKIP_WAITING' });
-              }
-            });
-          });
-        });
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (refreshing) return;
-          refreshing = true;
-          window.location.reload();
-        });
-      });
-    }
-  </script>
+  <script src="./js/app.js?v=6"></script>
+  <script src="./js/sw-register.js?v=6"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.4";
+  const APP_VERSION = "0.5";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
@@ -325,6 +325,16 @@
   // ---------- DOM helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  // Escape any value that originates from the user or an imported file before
+  // it is placed into innerHTML, to prevent stored XSS.
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
   function el(tag, cls, html) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -648,7 +658,7 @@
     const cap = Math.max(...data.map(d => d[1]));
     const rows = data.slice(0, max || 6).map(([name, n]) => `
       <div class="bar-row">
-        <span class="name">${name}</span>
+        <span class="name">${esc(name)}</span>
         <span class="bar-track"><span class="bar-fill" style="width:${Math.round((n / cap) * 100)}%"></span></span>
         <span class="cnt">${n}</span>
       </div>`).join("");
@@ -1161,7 +1171,7 @@
     const freqLabel = { daily: "Every day", weekdays: "Weekdays", weekly: "Weekly" };
     state.meds.forEach(m => {
       const item = el("div", "mini-item");
-      item.innerHTML = `<div class="mi-main"><div class="mi-title">${m.name}</div><div class="mi-sub">${m.type} · ${m.time} · ${freqLabel[m.freq] || m.freq}</div></div>`;
+      item.innerHTML = `<div class="mi-main"><div class="mi-title">${esc(m.name)}</div><div class="mi-sub">${esc(m.type)} · ${esc(m.time)} · ${esc(freqLabel[m.freq] || m.freq)}</div></div>`;
       const del = el("button", "mi-del", "Remove");
       del.addEventListener("click", () => { state.meds = state.meds.filter(x => x.id !== m.id); save(); renderMeds(); toast("Reminder removed"); });
       item.appendChild(del);
@@ -1193,7 +1203,7 @@
     if (!state.events.length) { wrap.innerHTML = `<div class="mini-empty">No events yet.</div>`; return; }
     [...state.events].sort((a, b) => parse(b.date) - parse(a.date)).forEach(ev => {
       const item = el("div", "mini-item");
-      item.innerHTML = `<div class="mi-main"><div class="mi-title">${ev.type}</div><div class="mi-sub">${prettyDate(ev.date)}${ev.note ? " · " + ev.note : ""}</div></div>`;
+      item.innerHTML = `<div class="mi-main"><div class="mi-title">${esc(ev.type)}</div><div class="mi-sub">${esc(prettyDate(ev.date))}${ev.note ? " · " + esc(ev.note) : ""}</div></div>`;
       const del = el("button", "mi-del", "Remove");
       del.addEventListener("click", () => { state.events = state.events.filter(x => x.id !== ev.id); save(); renderEvents(); renderCalendar(); toast("Event removed"); });
       item.appendChild(del);
