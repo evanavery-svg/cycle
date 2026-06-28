@@ -3,12 +3,12 @@
  * version when online. The cache is only a fallback for offline use.
  * This is what makes the app "update on every launch."
  */
-const VERSION = "cycle-v0_5";
+const VERSION = "cycle-v0_6";
 const CORE = [
   "./",
   "./index.html",
-  "./css/styles.css?v=6",
-  "./js/app.js?v=6",
+  "./css/styles.css?v=7",
+  "./js/app.js?v=7",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png"

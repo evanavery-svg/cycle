@@ -20,7 +20,7 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=6" />
+  <link rel="stylesheet" href="./css/styles.css?v=7" />
 
   <title>cycle</title>
 </head>
@@ -313,6 +313,23 @@
         </div>
 
         <div class="card section">
+          <h3>App lock 🔐</h3>
+          <p class="lead">Require a PIN to open cycle — ideal if you share your device.</p>
+          <div class="toggle-row">
+            <div><strong>PIN lock</strong><span class="toggle-sub">Ask for a PIN each time the app opens</span></div>
+            <button class="switch" id="tgLock" role="switch" aria-checked="false"><span></span></button>
+          </div>
+          <div id="lockExtra" class="notif-options">
+            <div class="toggle-row" id="bioRow" hidden>
+              <div><strong>Unlock with Face ID / Touch ID</strong><span class="toggle-sub">Use your device's biometrics instead of typing</span></div>
+              <button class="switch" id="tgBio" role="switch" aria-checked="false"><span></span></button>
+            </div>
+            <button class="cta ghost" id="changePin">Change PIN</button>
+          </div>
+          <p class="hint">A PIN locks the screen so others can't open cycle. It is a screen lock, not full encryption — see <strong>SECURITY.md</strong>.</p>
+        </div>
+
+        <div class="card section">
           <h3>Privacy 🔒</h3>
           <p class="lead">cycle stores everything locally on this device. Nothing is uploaded, tracked, or sold — ever.</p>
           <button class="cta ghost" id="showPrivacy">Read our privacy promise</button>
@@ -366,6 +383,30 @@
         <button class="cta ghost" id="pmCancel">Cancel</button>
         <button class="cta" id="pmSave">Save period</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Lock screen -->
+  <div class="lock-screen" id="lockScreen" hidden>
+    <div class="lock-inner">
+      <div class="bloom small"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="lock-title" id="lockTitle">Enter your PIN</div>
+      <div class="pin-dots" id="lockDots"></div>
+      <div class="lock-error" id="lockError"></div>
+      <div class="keypad" id="lockKeypad"></div>
+      <button class="bio-btn" id="bioUnlock" hidden>🙂 Unlock with Face ID / Touch ID</button>
+    </div>
+  </div>
+
+  <!-- PIN setup modal -->
+  <div class="modal-backdrop center" id="pinModal" hidden>
+    <div class="modal sheet pin-sheet" role="dialog" aria-modal="true">
+      <h2 id="pinSetupTitle">Create a PIN</h2>
+      <p class="hint" id="pinSetupHint">Choose a 4-digit PIN.</p>
+      <div class="pin-dots" id="setupDots"></div>
+      <div class="lock-error" id="setupError"></div>
+      <div class="keypad" id="setupKeypad"></div>
+      <button class="cta ghost" id="pinCancel">Cancel</button>
     </div>
   </div>
 
@@ -467,7 +508,7 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script src="./js/app.js?v=6"></script>
-  <script src="./js/sw-register.js?v=6"></script>
+  <script src="./js/app.js?v=7"></script>
+  <script src="./js/sw-register.js?v=7"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.5";
+  const APP_VERSION = "0.6";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
@@ -1328,6 +1328,7 @@
     renderNotifSettings();
     renderMeds();
     renderEvents();
+    renderLockSettings();
   }
   $("#setName").addEventListener("input", (e) => {
     state.settings.name = e.target.value.slice(0, 24);
@@ -1372,6 +1373,248 @@
     maybeShowInstall();
   });
 
+  // ---------- App lock (PIN + biometrics) ----------
+  const LOCK_KEY = "cycle.lock"; // device-specific, kept out of data export
+  const PIN_LEN = 4;
+  function loadLock() { try { return JSON.parse(localStorage.getItem(LOCK_KEY)) || null; } catch (e) { return null; } }
+  function saveLock(o) { localStorage.setItem(LOCK_KEY, JSON.stringify(o)); }
+  function lockEnabled() { const l = loadLock(); return !!(l && l.hash); }
+
+  function randHex(n) {
+    const a = new Uint8Array(n); crypto.getRandomValues(a);
+    return [...a].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  async function hashPin(pin, salt) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + ":" + pin));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  async function verifyPin(pin) {
+    const l = loadLock();
+    if (!l || !l.hash) return false;
+    return (await hashPin(pin, l.salt)) === l.hash;
+  }
+
+  // Reusable numeric keypad. onKey gets a digit string or "del".
+  function buildKeypad(container, onKey, actionLabel, onAction) {
+    container.innerHTML = "";
+    const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+    keys.forEach(k => {
+      const b = el("button", null, k);
+      b.addEventListener("click", () => onKey(k));
+      container.appendChild(b);
+    });
+    const left = el("button", "act", actionLabel || "");
+    if (actionLabel && onAction) left.addEventListener("click", onAction);
+    else left.classList.add("blank");
+    container.appendChild(left);
+    const zero = el("button", null, "0");
+    zero.addEventListener("click", () => onKey("0"));
+    container.appendChild(zero);
+    const del = el("button", "act", "⌫");
+    del.addEventListener("click", () => onKey("del"));
+    container.appendChild(del);
+  }
+  function renderDots(container, count) {
+    container.innerHTML = "";
+    for (let i = 0; i < PIN_LEN; i++) container.appendChild(el("i", i < count ? "on" : null));
+  }
+  function shake(container) {
+    container.classList.remove("shake");
+    void container.offsetWidth;
+    container.classList.add("shake");
+  }
+
+  // --- Lock screen (unlock flow) ---
+  let lockEntry = "";
+  let onUnlocked = null;
+  function showLockScreen(after) {
+    onUnlocked = after || null;
+    lockEntry = "";
+    $("#lockError").textContent = "";
+    renderDots($("#lockDots"), 0);
+    const l = loadLock();
+    const bioBtn = $("#bioUnlock");
+    bioBtn.hidden = !(l && l.biometric && l.credId);
+    $("#lockScreen").hidden = false;
+  }
+  function hideLockScreen() {
+    $("#lockScreen").hidden = true;
+    if (typeof onUnlocked === "function") { const f = onUnlocked; onUnlocked = null; f(); }
+  }
+  async function lockKey(k) {
+    if (k === "del") { lockEntry = lockEntry.slice(0, -1); renderDots($("#lockDots"), lockEntry.length); return; }
+    if (lockEntry.length >= PIN_LEN) return;
+    lockEntry += k;
+    renderDots($("#lockDots"), lockEntry.length);
+    if (lockEntry.length === PIN_LEN) {
+      const ok = await verifyPin(lockEntry);
+      if (ok) { hideLockScreen(); }
+      else {
+        shake($("#lockDots"));
+        $("#lockError").textContent = "Incorrect PIN. Try again.";
+        lockEntry = "";
+        setTimeout(() => renderDots($("#lockDots"), 0), 400);
+      }
+    }
+  }
+  buildKeypad($("#lockKeypad"), lockKey);
+  $("#bioUnlock").addEventListener("click", async () => {
+    const ok = await bioUnlock();
+    if (ok) hideLockScreen();
+    else $("#lockError").textContent = "Biometric unlock failed — enter your PIN.";
+  });
+
+  // --- PIN setup / change / disable flow ---
+  let setupState = null; // { mode, step, first, resolve }
+  function openPinSetup(mode) {
+    return new Promise((resolve) => {
+      setupState = { mode, step: mode === "change" || mode === "disable" ? "current" : "new", first: "", entry: "", resolve };
+      updateSetupPrompt();
+      renderDots($("#setupDots"), 0);
+      $("#setupError").textContent = "";
+      $("#pinModal").hidden = false;
+    });
+  }
+  function closePinSetup(result) {
+    $("#pinModal").hidden = true;
+    const r = setupState && setupState.resolve;
+    setupState = null;
+    if (r) r(result);
+  }
+  function updateSetupPrompt() {
+    const titles = { current: "Enter current PIN", new: "Create a PIN", confirm: "Confirm your PIN" };
+    const hints = { current: "Verify it's you.", new: "Choose a 4-digit PIN.", confirm: "Enter your PIN again." };
+    $("#pinSetupTitle").textContent = setupState.mode === "change" ? "Change PIN" : (setupState.mode === "disable" ? "Turn off PIN lock" : "Create a PIN");
+    document.getElementById("pinSetupHint").textContent = hints[setupState.step];
+    if (setupState.step === "current") $("#pinSetupTitle").textContent = titles.current;
+    else if (setupState.step === "new") { if (setupState.mode !== "change") $("#pinSetupTitle").textContent = titles.new; }
+    else if (setupState.step === "confirm") $("#pinSetupTitle").textContent = titles.confirm;
+  }
+  async function setupKey(k) {
+    if (!setupState) return;
+    if (k === "del") { setupState.entry = setupState.entry.slice(0, -1); renderDots($("#setupDots"), setupState.entry.length); return; }
+    if (setupState.entry.length >= PIN_LEN) return;
+    setupState.entry += k;
+    renderDots($("#setupDots"), setupState.entry.length);
+    if (setupState.entry.length < PIN_LEN) return;
+
+    const pin = setupState.entry;
+    setupState.entry = "";
+
+    if (setupState.step === "current") {
+      if (await verifyPin(pin)) {
+        if (setupState.mode === "disable") { closePinSetup(true); return; }
+        setupState.step = "new"; updateSetupPrompt(); renderDots($("#setupDots"), 0); $("#setupError").textContent = "";
+      } else { fail("Incorrect PIN."); }
+      return;
+    }
+    if (setupState.step === "new") {
+      setupState.first = pin; setupState.step = "confirm"; updateSetupPrompt(); renderDots($("#setupDots"), 0); $("#setupError").textContent = "";
+      return;
+    }
+    if (setupState.step === "confirm") {
+      if (pin === setupState.first) {
+        const salt = randHex(16);
+        const hash = await hashPin(pin, salt);
+        const prev = loadLock() || {};
+        saveLock({ hash, salt, biometric: !!prev.biometric, credId: prev.credId || "" });
+        closePinSetup(true);
+      } else { setupState.step = "new"; setupState.first = ""; updateSetupPrompt(); fail("PINs didn't match. Start over."); }
+    }
+    function fail(msg) {
+      shake($("#setupDots"));
+      $("#setupError").textContent = msg;
+      setTimeout(() => renderDots($("#setupDots"), 0), 400);
+    }
+  }
+  buildKeypad($("#setupKeypad"), setupKey);
+  $("#pinCancel").addEventListener("click", () => closePinSetup(false));
+
+  // --- Biometric (WebAuthn platform authenticator = Face ID / Touch ID) ---
+  function b64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); const bin = atob(s); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a.buffer; }
+  async function bioAvailable() {
+    try { return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); }
+    catch (e) { return false; }
+  }
+  async function bioRegister() {
+    const cred = await navigator.credentials.create({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: { id: location.hostname, name: "cycle" },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: "cycle", displayName: "cycle" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+      timeout: 60000, attestation: "none"
+    }});
+    return b64(cred.rawId);
+  }
+  async function bioUnlock() {
+    const l = loadLock();
+    if (!l || !l.credId) return false;
+    try {
+      await navigator.credentials.get({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [{ type: "public-key", id: unb64(l.credId) }],
+        userVerification: "required", timeout: 60000, rpId: location.hostname
+      }});
+      return true; // resolves only after the OS verifies the user (Face ID / Touch ID / passcode)
+    } catch (e) { return false; }
+  }
+
+  // --- Settings wiring for the lock ---
+  async function renderLockSettings() {
+    const on = lockEnabled();
+    setSwitch("tgLock", on);
+    $("#lockExtra").classList.toggle("off", !on);
+    const avail = await bioAvailable();
+    $("#bioRow").hidden = !avail;
+    const l = loadLock();
+    setSwitch("tgBio", !!(l && l.biometric));
+  }
+  $("#tgLock").addEventListener("click", async () => {
+    if (!lockEnabled()) {
+      const ok = await openPinSetup("create");
+      if (ok) toast("PIN lock on 🔐");
+    } else {
+      const ok = await openPinSetup("disable");
+      if (ok) { clearLockConfig(); toast("PIN lock off"); }
+    }
+    renderLockSettings();
+  });
+  $("#changePin").addEventListener("click", async () => {
+    const ok = await openPinSetup("change");
+    if (ok) toast("PIN updated");
+  });
+  $("#tgBio").addEventListener("click", async () => {
+    const l = loadLock();
+    if (!l) { toast("Set a PIN first"); return; }
+    if (l.biometric) {
+      saveLock(Object.assign(l, { biometric: false, credId: "" }));
+      toast("Biometric unlock off");
+    } else {
+      try {
+        const credId = await bioRegister();
+        saveLock(Object.assign(l, { biometric: true, credId }));
+        toast("Face ID / Touch ID on 🙂");
+      } catch (e) {
+        toast("Couldn't set up biometrics");
+      }
+    }
+    renderLockSettings();
+  });
+  function clearLockConfig() { localStorage.removeItem(LOCK_KEY); }
+
+  // Re-lock when the app is sent to the background, so reopening asks again.
+  let lockedNow = false;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && lockEnabled()) {
+      lockedNow = true;
+    } else if (document.visibilityState === "visible" && lockedNow && lockEnabled()) {
+      lockedNow = false;
+      showLockScreen();
+    }
+  });
+
   // ---------- Boot ----------
   function boot() {
     const n = new Date();
@@ -1387,12 +1630,12 @@
     setTimeout(() => {
       $("#splash").classList.add("hide");
       $("#app").hidden = false;
-      // First-run privacy welcome
-      if (!localStorage.getItem("cycle.welcomed")) {
-        setTimeout(showPrivacy, 350);
-      } else {
-        maybeShowInstall();
-      }
+      const afterUnlock = () => {
+        if (!localStorage.getItem("cycle.welcomed")) setTimeout(showPrivacy, 350);
+        else maybeShowInstall();
+      };
+      if (lockEnabled()) showLockScreen(afterUnlock);
+      else afterUnlock();
     }, 1400);
     checkReminders();
   }
