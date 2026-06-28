@@ -5,18 +5,27 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.1";
+  const APP_VERSION = "0.2";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
-  const DEFAULTS = { periods: [], logs: {}, settings: { cycleLength: 28, periodLength: 5 }, pcos: {} };
+  const DEFAULTS = {
+    periods: [], logs: {}, pcos: {}, meds: [], events: [],
+    settings: {
+      cycleLength: 28, periodLength: 5, theme: "pink",
+      notif: { enabled: false, discreet: false, period: false, fertile: false }
+    }
+  };
 
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
       if (!raw) return structuredClone(DEFAULTS);
       const d = JSON.parse(raw);
-      return Object.assign(structuredClone(DEFAULTS), d);
+      const merged = Object.assign(structuredClone(DEFAULTS), d);
+      merged.settings = Object.assign(structuredClone(DEFAULTS.settings), d.settings || {});
+      merged.settings.notif = Object.assign(structuredClone(DEFAULTS.settings.notif), (d.settings && d.settings.notif) || {});
+      return merged;
     } catch (e) {
       return structuredClone(DEFAULTS);
     }
@@ -135,6 +144,38 @@
     ]]
   ];
 
+  // Cycle syncing: how to work WITH each phase. [phaseKey] -> {title, vibe, food, move, focus, love}
+  const SYNC = {
+    menstrual: {
+      title: "Menstrual phase", emoji: "🌑", vibe: "Rest & reflect — hormones are at their lowest.",
+      food: "Warm, iron-rich, comforting foods. Soups, leafy greens, dark chocolate.",
+      move: "Gentle yoga, stretching, slow walks. Rest is allowed.",
+      focus: "Reflect, journal, review. A natural time to assess and reset.",
+      love: "Cozy self-care, warmth, early nights. Be gentle with yourself."
+    },
+    follicular: {
+      title: "Follicular phase", emoji: "🌒", vibe: "Energy rising — fresh starts feel easy.",
+      food: "Light, fresh, vibrant foods. Sprouts, fermented foods, lean protein.",
+      move: "Try new workouts, cardio, dance — your stamina is climbing.",
+      focus: "Brainstorm, plan, start projects. Creativity and learning peak.",
+      love: "Social and open — say yes to new plans and people."
+    },
+    ovulation: {
+      title: "Ovulation", emoji: "🌕", vibe: "Peak energy, confidence & magnetism.",
+      food: "Light meals, lots of fiber, antioxidant-rich fruit & veg.",
+      move: "Go hard — HIIT, heavy lifts, group classes. Personal bests live here.",
+      focus: "Big conversations, presentations, dates — you're at your most expressive.",
+      love: "Most social and confident. Schedule the important talks now."
+    },
+    luteal: {
+      title: "Luteal phase", emoji: "🌗", vibe: "Winding down — focus turns inward.",
+      food: "Complex carbs, magnesium, B-vitamins. Sweet potato, leafy greens, seeds.",
+      move: "Strength then ease into Pilates, yoga, walks as your period nears.",
+      focus: "Detail work, admin, tidying, finishing tasks. Great for getting things done.",
+      love: "Set boundaries, nest, rest more. Protect your energy."
+    }
+  };
+
   const PCOS_QUESTIONS = [
     "My periods are often irregular, infrequent, or absent",
     "I have cycles longer than 35 days, or fewer than 8 periods a year",
@@ -238,6 +279,22 @@
     return { name, sub, chips };
   }
 
+  // Which of the four cycle-syncing phases is "today"?
+  function phaseKey(p) {
+    if (!p) return null;
+    const today = todayISO();
+    const dayInPeriod = daysBetween(p.cycleStart, today);
+    if (dayInPeriod < p.periodLen) return "menstrual";
+    if (today >= p.curFertileStart && today <= p.curFertileEnd) return "ovulation";
+    if (dayInPeriod < daysBetween(p.cycleStart, p.curOvulation)) return "follicular";
+    return "luteal";
+  }
+
+  // Health events that fall on a given date.
+  function eventsOn(dateStr) {
+    return (state.events || []).filter(e => e.date === dateStr);
+  }
+
   // Classify a given date for the calendar.
   function classify(dateStr, p) {
     const cls = [];
@@ -287,11 +344,12 @@
   function go(screen) {
     $$(".screen").forEach(s => (s.hidden = s.dataset.screen !== screen));
     $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.go === screen));
-    const titles = { home: "cycle", log: "Daily log", insights: "Your review", learn: "Learn" };
+    const titles = { home: "cycle", log: "Daily log", insights: "Your review", learn: "Learn", settings: "Settings" };
     $("#topbarTitle").textContent = titles[screen] || "cycle";
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (screen === "insights") renderReview();
     if (screen === "log") renderLog();
+    if (screen === "settings") renderSettings();
   }
   $$(".tab").forEach(t => t.addEventListener("click", () => go(t.dataset.go)));
 
@@ -315,6 +373,10 @@
       const cls = classify(ds, p);
       cls.forEach(c => cell.classList.add(c));
       if (ds === today) cell.classList.add("today");
+      if (eventsOn(ds).length) {
+        cell.classList.add("has-event");
+        cell.title = eventsOn(ds).map(e => e.type).join(", ");
+      }
       if (hasLog(ds)) {
         const marks = el("div", "marks");
         marks.appendChild(el("i"));
@@ -327,6 +389,26 @@
       grid.appendChild(cell);
     }
     renderHero(p);
+    renderSyncCard(p);
+  }
+
+  // Phase-aware cycle-syncing card on the home screen.
+  function renderSyncCard(p) {
+    const key = phaseKey(p);
+    const phaseEl = $("#syncPhase");
+    const grid = $("#syncGrid");
+    if (!key) {
+      phaseEl.textContent = "Log a period to unlock guidance tailored to your phase.";
+      grid.innerHTML = "";
+      return;
+    }
+    const s = SYNC[key];
+    phaseEl.textContent = `${s.emoji} ${s.title} — ${s.vibe}`;
+    grid.innerHTML = `
+      <div class="sync-tile"><div class="st-h">🍓 Eat</div><div class="st-b">${s.food}</div></div>
+      <div class="sync-tile"><div class="st-h">🏃‍♀️ Move</div><div class="st-b">${s.move}</div></div>
+      <div class="sync-tile"><div class="st-h">🧠 Focus</div><div class="st-b">${s.focus}</div></div>
+      <div class="sync-tile"><div class="st-h">💗 Self-care</div><div class="st-b">${s.love}</div></div>`;
   }
 
   function renderHero(p) {
@@ -672,6 +754,10 @@
   }
   buildAccordion("exerciseAcc", EXERCISES);
   buildAccordion("foodAcc", FOODS);
+  buildAccordion("syncAcc", Object.values(SYNC).map(s => [
+    `${s.emoji} ${s.title}`, s.vibe,
+    [`🍓 Eat: ${s.food}`, `🏃‍♀️ Move: ${s.move}`, `🧠 Focus: ${s.focus}`, `💗 Self-care: ${s.love}`]
+  ]));
 
   // PCOS quiz
   function renderPcos() {
@@ -781,7 +867,9 @@
         periods: state.periods,
         logs: state.logs,
         settings: state.settings,
-        pcos: state.pcos
+        pcos: state.pcos,
+        meds: state.meds,
+        events: state.events
       }
     };
     download(`cycle-data-${stamp()}.json`, JSON.stringify(payload, null, 2), "application/json");
@@ -836,6 +924,17 @@
     L.push("(Reminder: this is an awareness checklist, not a diagnosis.)");
     L.push("");
 
+    L.push(`=== HEALTH TIMELINE (${(state.events || []).length}) ===`);
+    if (!state.events.length) L.push("(none)");
+    [...state.events].sort((a, b) => parse(a.date) - parse(b.date)).forEach(ev =>
+      L.push(`- ${prettyDate(ev.date)}: ${ev.type}${ev.note ? " — " + ev.note : ""}`));
+    L.push("");
+
+    L.push(`=== MEDICATION REMINDERS (${(state.meds || []).length}) ===`);
+    if (!state.meds.length) L.push("(none)");
+    state.meds.forEach(m => L.push(`- ${m.name} (${m.type}) at ${m.time}, ${m.freq}`));
+    L.push("");
+
     L.push("This file is a human-readable summary. To transfer your data to");
     L.push("another app, use the JSON export instead.");
 
@@ -854,13 +953,18 @@
           return;
         }
         if (!confirm("Import will replace your current data on this device. Continue?")) return;
+        const settings = Object.assign(structuredClone(DEFAULTS.settings), d.settings || {});
+        settings.notif = Object.assign(structuredClone(DEFAULTS.settings.notif), (d.settings && d.settings.notif) || {});
         state = Object.assign(structuredClone(DEFAULTS), {
           periods: Array.isArray(d.periods) ? d.periods : [],
           logs: d.logs && typeof d.logs === "object" ? d.logs : {},
-          settings: Object.assign(structuredClone(DEFAULTS.settings), d.settings || {}),
-          pcos: d.pcos && typeof d.pcos === "object" ? d.pcos : {}
+          settings,
+          pcos: d.pcos && typeof d.pcos === "object" ? d.pcos : {},
+          meds: Array.isArray(d.meds) ? d.meds : [],
+          events: Array.isArray(d.events) ? d.events : []
         });
         save();
+        applyTheme();
         renderCalendar();
         renderLog();
         renderPcos();
@@ -882,6 +986,349 @@
     e.target.value = ""; // allow re-importing the same file
   });
 
+  // ---------- Themes ----------
+  const THEMES = [
+    { id: "pink", name: "Blossom", tag: "Default", swatch: "pink", color: "#ff7eb3" },
+    { id: "ocean", name: "Underwater", tag: "Calm", swatch: "ocean", color: "#18a3bd" },
+    { id: "space", name: "Cosmos", tag: "Dark", swatch: "space", color: "#9a7dff" }
+  ];
+  function applyTheme() {
+    const t = state.settings.theme || "pink";
+    if (t === "pink") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", t);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const def = THEMES.find(x => x.id === t) || THEMES[0];
+    if (meta) meta.setAttribute("content", def.color);
+  }
+  function renderThemeGrid() {
+    const grid = $("#themeGrid");
+    grid.innerHTML = "";
+    THEMES.forEach(t => {
+      const opt = el("button", "theme-opt" + (state.settings.theme === t.id ? " active" : ""));
+      opt.innerHTML = `<div class="theme-swatch ${t.swatch}"></div><div class="theme-name">${t.name}</div><div class="theme-tag">${t.tag}</div>`;
+      opt.addEventListener("click", () => {
+        state.settings.theme = t.id;
+        save();
+        applyTheme();
+        renderThemeGrid();
+        renderCalendar();
+        toast(t.name + " theme");
+      });
+      grid.appendChild(opt);
+    });
+  }
+
+  // ---------- Notifications ----------
+  function notifSupported() { return "Notification" in window; }
+  function showNotification(title, body) {
+    if (!notifSupported() || Notification.permission !== "granted") return;
+    const opts = { body, icon: "./icons/icon-192.png", badge: "./icons/icon-192.png", tag: "cycle" };
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(reg => reg.showNotification(title, opts)).catch(() => new Notification(title, opts));
+      } else {
+        new Notification(title, opts);
+      }
+    } catch (e) { /* ignore */ }
+  }
+  function discreetText(plain, discreetMsg) {
+    return state.settings.notif.discreet ? discreetMsg : plain;
+  }
+  async function ensurePermission() {
+    if (!notifSupported()) { toast("Notifications aren't supported here"); return false; }
+    if (Notification.permission === "granted") return true;
+    if (Notification.permission === "denied") {
+      toast("Enable notifications in your device settings");
+      return false;
+    }
+    const res = await Notification.requestPermission();
+    return res === "granted";
+  }
+  function setSwitch(id, on) {
+    const sw = $("#" + id);
+    if (sw) sw.setAttribute("aria-checked", on ? "true" : "false");
+  }
+  function renderNotifSettings() {
+    const n = state.settings.notif;
+    setSwitch("tgNotif", n.enabled);
+    setSwitch("tgDiscreet", n.discreet);
+    setSwitch("tgPeriod", n.period);
+    setSwitch("tgFertile", n.fertile);
+    $("#notifOptions").classList.toggle("off", !n.enabled);
+    const note = $("#notifNote");
+    if (!notifSupported()) note.textContent = "Heads up: this browser doesn't support notifications.";
+    else if (Notification.permission === "denied") note.textContent = "Notifications are blocked in your browser/device settings — re-enable them there to use reminders.";
+    else note.textContent = "Reminders are checked when you open cycle. For alerts while closed, keep cycle added to your Home Screen.";
+  }
+  async function toggleNotif() {
+    const n = state.settings.notif;
+    if (!n.enabled) {
+      const ok = await ensurePermission();
+      if (!ok) { renderNotifSettings(); return; }
+      n.enabled = true;
+    } else {
+      n.enabled = false;
+    }
+    save();
+    renderNotifSettings();
+  }
+  function toggleNotifOpt(key) {
+    const n = state.settings.notif;
+    if (!n.enabled) { toast("Turn on notifications first"); return; }
+    n[key] = !n[key];
+    save();
+    renderNotifSettings();
+  }
+
+  // Best-effort reminder check (runs when the app is opened).
+  function checkReminders() {
+    const n = state.settings.notif;
+    if (!n.enabled || !notifSupported() || Notification.permission !== "granted") return;
+    const today = todayISO();
+    const fired = JSON.parse(localStorage.getItem("cycle.fired") || "{}");
+    const now = new Date();
+    const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+    // Medication reminders due earlier today and not yet fired.
+    (state.meds || []).forEach(m => {
+      if (!dueToday(m, now)) return;
+      if (m.time > hhmm) return; // not time yet
+      const k = `med:${m.id}:${today}`;
+      if (fired[k]) return;
+      fired[k] = 1;
+      showNotification(
+        discreetText("💊 " + m.name, "🔔 cycle reminder"),
+        discreetText(`Time for your ${m.type.toLowerCase()} (${m.time}).`, "You have a reminder.")
+      );
+    });
+
+    // Cycle predictions.
+    const p = predict();
+    if (p) {
+      if (n.period) {
+        const toNext = daysBetween(today, p.nextStart);
+        if (toNext === 2) {
+          const k = `period:${p.nextStart}`;
+          if (!fired[k]) { fired[k] = 1; showNotification(discreetText("🩸 Period coming up", "🔔 cycle reminder"), discreetText("Your period is predicted in about 2 days.", "Something's coming up in 2 days.")); }
+        }
+      }
+      if (n.fertile) {
+        const toF = daysBetween(today, p.curFertileStart);
+        if (toF === 0) {
+          const k = `fertile:${p.curFertileStart}`;
+          if (!fired[k]) { fired[k] = 1; showNotification(discreetText("🌸 Fertile window", "🔔 cycle reminder"), discreetText("Your fertile window starts today.", "A new window starts today.")); }
+        }
+      }
+    }
+    localStorage.setItem("cycle.fired", JSON.stringify(fired));
+  }
+  function dueToday(m, now) {
+    const dow = now.getDay();
+    if (m.freq === "daily") return true;
+    if (m.freq === "weekdays") return dow >= 1 && dow <= 5;
+    if (m.freq === "weekly") return m.dow == null || dow === m.dow;
+    return true;
+  }
+
+  // ---------- Medications ----------
+  function renderMeds() {
+    const wrap = $("#medList");
+    wrap.innerHTML = "";
+    if (!state.meds.length) { wrap.innerHTML = `<div class="mini-empty">No reminders yet.</div>`; return; }
+    const freqLabel = { daily: "Every day", weekdays: "Weekdays", weekly: "Weekly" };
+    state.meds.forEach(m => {
+      const item = el("div", "mini-item");
+      item.innerHTML = `<div class="mi-main"><div class="mi-title">${m.name}</div><div class="mi-sub">${m.type} · ${m.time} · ${freqLabel[m.freq] || m.freq}</div></div>`;
+      const del = el("button", "mi-del", "Remove");
+      del.addEventListener("click", () => { state.meds = state.meds.filter(x => x.id !== m.id); save(); renderMeds(); toast("Reminder removed"); });
+      item.appendChild(del);
+      wrap.appendChild(item);
+    });
+  }
+  const medModal = $("#medModal");
+  $("#addMed").addEventListener("click", () => {
+    $("#medName").value = ""; $("#medType").value = "Birth control"; $("#medTime").value = "09:00"; $("#medFreq").value = "daily";
+    medModal.hidden = false;
+  });
+  $("#medCancel").addEventListener("click", () => (medModal.hidden = true));
+  medModal.addEventListener("click", e => { if (e.target === medModal) medModal.hidden = true; });
+  $("#medSave").addEventListener("click", async () => {
+    const name = $("#medName").value.trim();
+    if (!name) { toast("Give it a name"); return; }
+    state.meds.push({ id: Date.now().toString(36), name, type: $("#medType").value, time: $("#medTime").value || "09:00", freq: $("#medFreq").value });
+    save();
+    medModal.hidden = true;
+    renderMeds();
+    toast("Reminder saved 💊");
+    if (state.settings.notif.enabled && Notification.permission !== "granted") await ensurePermission();
+  });
+
+  // ---------- Health events ----------
+  function renderEvents() {
+    const wrap = $("#eventList");
+    wrap.innerHTML = "";
+    if (!state.events.length) { wrap.innerHTML = `<div class="mini-empty">No events yet.</div>`; return; }
+    [...state.events].sort((a, b) => parse(b.date) - parse(a.date)).forEach(ev => {
+      const item = el("div", "mini-item");
+      item.innerHTML = `<div class="mi-main"><div class="mi-title">${ev.type}</div><div class="mi-sub">${prettyDate(ev.date)}${ev.note ? " · " + ev.note : ""}</div></div>`;
+      const del = el("button", "mi-del", "Remove");
+      del.addEventListener("click", () => { state.events = state.events.filter(x => x.id !== ev.id); save(); renderEvents(); renderCalendar(); toast("Event removed"); });
+      item.appendChild(del);
+      wrap.appendChild(item);
+    });
+  }
+  const eventModal = $("#eventModal");
+  $("#addEvent").addEventListener("click", () => {
+    $("#evType").value = "IUD inserted"; $("#evDate").value = todayISO(); $("#evNote").value = "";
+    eventModal.hidden = false;
+  });
+  $("#evCancel").addEventListener("click", () => (eventModal.hidden = true));
+  eventModal.addEventListener("click", e => { if (e.target === eventModal) eventModal.hidden = true; });
+  $("#evSave").addEventListener("click", () => {
+    const date = $("#evDate").value;
+    if (!date) { toast("Pick a date"); return; }
+    state.events.push({ id: Date.now().toString(36), type: $("#evType").value, date, note: $("#evNote").value.trim() });
+    save();
+    eventModal.hidden = true;
+    renderEvents();
+    renderCalendar();
+    toast("Event saved 📌");
+  });
+
+  // ---------- Apple Health ----------
+  function exportHealth() {
+    // Build an Apple Health–style export with menstrual flow + sexual activity records.
+    const flowMap = { spotting: "HKCategoryValueMenstrualFlowUnspecified", light: "HKCategoryValueMenstrualFlowLight", medium: "HKCategoryValueMenstrualFlowMedium", heavy: "HKCategoryValueMenstrualFlowHeavy" };
+    const lines = [];
+    lines.push('<?xml version="1.0" encoding="UTF-8"?>');
+    lines.push('<!DOCTYPE HealthData [<!ELEMENT HealthData (Record*)>]>');
+    lines.push('<HealthData locale="en_US">');
+    lines.push(`  <ExportDate value="${fmtHK(new Date())}"/>`);
+
+    const emit = [];
+    state.periods.forEach(p => {
+      const end = p.end || addDays(p.start, (state.settings.periodLength || 5) - 1);
+      let d = p.start, idx = 0;
+      while (d <= end) {
+        const startDay = idx === 0;
+        emit.push(`  <Record type="HKCategoryTypeIdentifierMenstrualFlow" sourceName="cycle" startDate="${fmtHK(parse(d), 9)}" endDate="${fmtHK(parse(d), 21)}" value="HKCategoryValueMenstrualFlowMedium"><MetadataEntry key="HKMenstrualCycleStart" value="${startDay ? 1 : 0}"/></Record>`);
+        d = addDays(d, 1); idx++;
+      }
+    });
+    Object.entries(state.logs).forEach(([d, l]) => {
+      if (l.flow && flowMap[l.flow]) {
+        emit.push(`  <Record type="HKCategoryTypeIdentifierMenstrualFlow" sourceName="cycle" startDate="${fmtHK(parse(d), 9)}" endDate="${fmtHK(parse(d), 21)}" value="${flowMap[l.flow]}"><MetadataEntry key="HKMenstrualCycleStart" value="0"/></Record>`);
+      }
+      if (l.sex && l.sex !== "none") {
+        const prot = l.sex === "protected" ? "HKCategoryValueContraceptiveUnspecified" : "HKCategoryValueNotApplicable";
+        emit.push(`  <Record type="HKCategoryTypeIdentifierSexualActivity" sourceName="cycle" startDate="${fmtHK(parse(d), 21)}" endDate="${fmtHK(parse(d), 21)}" value="HKCategoryValueNotApplicable"><MetadataEntry key="HKSexualActivityProtectionUsed" value="${l.sex === "protected" ? 1 : 0}"/></Record>`);
+      }
+    });
+    lines.push(...emit);
+    lines.push('</HealthData>');
+    download(`cycle-apple-health-${stamp()}.xml`, lines.join("\n"), "application/xml");
+    toast("Apple Health file ready 🍎");
+  }
+  function fmtHK(date, hour) {
+    const d = new Date(date);
+    if (hour != null) d.setHours(hour, 0, 0, 0);
+    const p = (x) => String(x).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())} -0000`;
+  }
+  function importHealth(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const doc = new DOMParser().parseFromString(reader.result, "application/xml");
+        if (doc.querySelector("parsererror")) { toast("Couldn't parse that file"); return; }
+        const recs = [...doc.querySelectorAll('Record[type="HKCategoryTypeIdentifierMenstrualFlow"]')];
+        const sex = [...doc.querySelectorAll('Record[type="HKCategoryTypeIdentifierSexualActivity"]')];
+        if (!recs.length && !sex.length) { toast("No cycle records found in that file"); return; }
+        if (!confirm(`Found ${recs.length} period day(s) and ${sex.length} intimacy record(s). Add them to cycle?`)) return;
+
+        // Group menstrual-flow days into period ranges.
+        const flowDays = recs.map(r => (r.getAttribute("startDate") || "").slice(0, 10)).filter(Boolean).sort();
+        const uniq = [...new Set(flowDays)];
+        let runStart = null, prev = null;
+        const addRange = (s, e) => {
+          if (!state.periods.some(p => p.start === s)) state.periods.push({ start: s, end: e });
+        };
+        uniq.forEach(day => {
+          if (runStart == null) { runStart = day; prev = day; return; }
+          if (daysBetween(prev, day) === 1) { prev = day; return; }
+          addRange(runStart, prev); runStart = day; prev = day;
+        });
+        if (runStart != null) addRange(runStart, prev);
+
+        sex.forEach(r => {
+          const day = (r.getAttribute("startDate") || "").slice(0, 10);
+          if (!day) return;
+          const prot = r.querySelector('MetadataEntry[key="HKSexualActivityProtectionUsed"]');
+          const used = prot && prot.getAttribute("value") === "1";
+          state.logs[day] = state.logs[day] || {};
+          if (!state.logs[day].sex) state.logs[day].sex = used ? "protected" : "unprotected";
+        });
+
+        save();
+        renderCalendar();
+        renderLog();
+        toast("Imported from Apple Health 🍎");
+      } catch (e) {
+        toast("Couldn't read that file");
+      }
+    };
+    reader.onerror = () => toast("Couldn't read that file");
+    reader.readAsText(file);
+  }
+  $("#exportHealth").addEventListener("click", exportHealth);
+  $("#importHealth").addEventListener("click", () => $("#healthFile").click());
+  $("#healthFile").addEventListener("change", e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) importHealth(f);
+    e.target.value = "";
+  });
+
+  // ---------- Settings screen ----------
+  function renderSettings() {
+    renderThemeGrid();
+    renderNotifSettings();
+    renderMeds();
+    renderEvents();
+  }
+  $("#settingsBtn").addEventListener("click", () => go("settings"));
+  $("#syncMore").addEventListener("click", () => go("learn"));
+  $("#tgNotif").addEventListener("click", toggleNotif);
+  $("#tgDiscreet").addEventListener("click", () => toggleNotifOpt("discreet"));
+  $("#tgPeriod").addEventListener("click", () => toggleNotifOpt("period"));
+  $("#tgFertile").addEventListener("click", () => toggleNotifOpt("fertile"));
+  $("#testNotif").addEventListener("click", async () => {
+    const ok = await ensurePermission();
+    if (!ok) return;
+    showNotification(discreetText("cycle 💗", "cycle 🔔"), discreetText("This is how your reminders will look.", "This is how your reminders will look."));
+    toast("Test sent");
+  });
+  $("#eraseAll").addEventListener("click", () => {
+    if (!confirm("Erase ALL your data on this device? This cannot be undone.")) return;
+    localStorage.removeItem(KEY);
+    localStorage.removeItem("cycle.fired");
+    state = structuredClone(DEFAULTS);
+    save();
+    applyTheme();
+    renderCalendar();
+    renderLog();
+    renderPcos();
+    renderSettings();
+    toast("Everything erased");
+  });
+
+  // ---------- Privacy welcome ----------
+  function showPrivacy() { $("#privacyModal").hidden = false; }
+  $("#showPrivacy").addEventListener("click", showPrivacy);
+  $("#privacyAccept").addEventListener("click", () => {
+    $("#privacyModal").hidden = true;
+    localStorage.setItem("cycle.welcomed", "1");
+  });
+
   // ---------- Boot ----------
   function boot() {
     const n = new Date();
@@ -890,14 +1337,21 @@
     logDateStr = todayISO();
     $("#appVersion").textContent = "v" + APP_VERSION;
     $("#copyYear").textContent = n.getFullYear();
+    applyTheme();
     renderCalendar();
     renderLog();
     // Hide splash
     setTimeout(() => {
       $("#splash").classList.add("hide");
       $("#app").hidden = false;
+      // First-run privacy welcome
+      if (!localStorage.getItem("cycle.welcomed")) {
+        setTimeout(showPrivacy, 350);
+      } else {
+        maybeShowInstall();
+      }
     }, 1400);
-    maybeShowInstall();
+    checkReminders();
   }
   boot();
 })();

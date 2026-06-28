@@ -15,7 +15,7 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=2" />
+  <link rel="stylesheet" href="./css/styles.css?v=3" />
 
   <title>cycle</title>
 </head>
@@ -34,7 +34,12 @@
   <div id="app" class="app" hidden>
     <header class="topbar">
       <div class="topbar-title" id="topbarTitle">cycle</div>
-      <button class="icon-btn" id="todayBtn" aria-label="Jump to today">Today</button>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="todayBtn" aria-label="Jump to today">Today</button>
+        <button class="icon-btn round" id="settingsBtn" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"/><path d="M19.4 13a7.5 7.5 0 000-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 00-1.7-1l-.4-2.5h-4l-.4 2.5a7.5 7.5 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.5 7.5 0 000 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 001.7 1l.4 2.5h4l.4-2.5a7.5 7.5 0 001.7-1l2.4 1 2-3.4-2-1.6z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+      </div>
     </header>
 
     <main class="screens">
@@ -56,6 +61,15 @@
             <div class="hero-sub" id="heroSub">Log your first period to begin</div>
             <div class="hero-chips" id="heroChips"></div>
           </div>
+        </div>
+
+        <div class="card sync-card" id="syncCard">
+          <div class="sync-head">
+            <h3>Cycle syncing <span class="beta">your edge</span></h3>
+            <button class="sync-more" id="syncMore">Learn more ›</button>
+          </div>
+          <p class="sync-phase" id="syncPhase">—</p>
+          <div class="sync-grid" id="syncGrid"></div>
         </div>
 
         <div class="cal card">
@@ -181,6 +195,13 @@
 
       <!-- LEARN -->
       <section class="screen" id="screen-learn" data-screen="learn" hidden>
+        <div class="card section sync-hero">
+          <h3>Cycle syncing 🌙✨</h3>
+          <p class="lead">Your hormones shift across four phases — so your energy, mood, appetite and focus do too. <strong>Cycle syncing</strong> means working <em>with</em> those shifts instead of against them: how you eat, move, work, and rest. Tap a phase to explore.</p>
+          <div class="accordion" id="syncAcc"></div>
+          <p class="hint">General wellness guidance, not medical advice. Everybody is different — yours is the only data that matters.</p>
+        </div>
+
         <div class="card section">
           <h3>Move with your cycle 🤸‍♀️</h3>
           <p class="lead">Gentle guidance by phase — listen to your body first.</p>
@@ -199,16 +220,83 @@
           <div id="pcosQuiz"></div>
         </div>
 
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="screen" id="screen-settings" data-screen="settings" hidden>
+        <div class="card section">
+          <h3>Appearance 🎨</h3>
+          <p class="lead">Pick a vibe. Your data stays exactly the same.</p>
+          <div class="theme-grid" id="themeGrid"></div>
+        </div>
+
+        <div class="card section">
+          <h3>Notifications 🔔</h3>
+          <p class="lead">Gentle nudges, fully in your control. Turn everything off with one tap.</p>
+          <div class="toggle-row">
+            <div><strong>Enable notifications</strong><span class="toggle-sub">Master switch — off by default</span></div>
+            <button class="switch" id="tgNotif" role="switch" aria-checked="false"><span></span></button>
+          </div>
+          <div id="notifOptions" class="notif-options">
+            <div class="toggle-row">
+              <div><strong>Discreet mode</strong><span class="toggle-sub">Hide the word “period”. Alerts just say “cycle reminder”.</span></div>
+              <button class="switch" id="tgDiscreet" role="switch" aria-checked="false"><span></span></button>
+            </div>
+            <div class="toggle-row">
+              <div><strong>Upcoming period</strong><span class="toggle-sub">A heads-up 2 days before</span></div>
+              <button class="switch" id="tgPeriod" role="switch" aria-checked="false"><span></span></button>
+            </div>
+            <div class="toggle-row">
+              <div><strong>Fertile window</strong><span class="toggle-sub">When your fertile days begin</span></div>
+              <button class="switch" id="tgFertile" role="switch" aria-checked="false"><span></span></button>
+            </div>
+            <button class="cta ghost" id="testNotif">Send a test notification</button>
+            <p class="hint" id="notifNote"></p>
+          </div>
+        </div>
+
+        <div class="card section">
+          <h3>Medication reminders 💊</h3>
+          <p class="lead">Birth control, pain relief, supplements — never miss a dose.</p>
+          <div id="medList" class="mini-list"></div>
+          <button class="cta ghost" id="addMed">＋ Add a reminder</button>
+        </div>
+
+        <div class="card section">
+          <h3>Health timeline 📌</h3>
+          <p class="lead">Note milestones like getting an IUD or starting birth control. They appear on your calendar.</p>
+          <div id="eventList" class="mini-list"></div>
+          <button class="cta ghost" id="addEvent">＋ Add an event</button>
+        </div>
+
+        <div class="card section">
+          <h3>Apple Health 🍎</h3>
+          <p class="lead">Move your cycle data to and from Apple Health.</p>
+          <div class="data-btns">
+            <button class="cta ghost" id="importHealth">⬆︎ Import from Apple Health</button>
+            <button class="cta ghost" id="exportHealth">⬇︎ Export for Apple Health</button>
+          </div>
+          <input type="file" id="healthFile" accept=".xml,text/xml,application/xml" hidden />
+          <p class="hint"><strong>Import:</strong> in the Health app, tap your photo → <em>Export All Health Data</em>, unzip it, and choose <em>export.xml</em> here. We'll read your Cycle Tracking (period & sexual activity) records.<br/><br/><strong>Export:</strong> creates an Apple Health–format file. Because Apple doesn't let web apps write to Health directly, bring it in with the “Import Health Data” Shortcut on iOS.</p>
+        </div>
+
         <div class="card section">
           <h3>Your data 📦</h3>
-          <p class="lead">Everything you log lives privately on this device. Back it up or move it to another app anytime.</p>
+          <p class="lead">Everything you log lives privately on this device. Back it up or move it anytime.</p>
           <div class="data-btns">
             <button class="cta ghost" id="exportTxt">⬇︎ Export as TXT</button>
             <button class="cta ghost" id="exportJson">⬇︎ Export as JSON</button>
             <button class="cta ghost" id="importBtn">⬆︎ Import data</button>
           </div>
-          <p class="hint"><strong>TXT</strong> is plain text that's easy to read and review. <strong>JSON</strong> is machine-readable data — best for transferring to another app.</p>
+          <p class="hint"><strong>TXT</strong> is plain text that's easy to read and review. <strong>JSON</strong> is machine-readable — best for transferring to another app.</p>
           <input type="file" id="importFile" accept=".json,application/json" hidden />
+        </div>
+
+        <div class="card section">
+          <h3>Privacy 🔒</h3>
+          <p class="lead">cycle stores everything locally on this device. Nothing is uploaded, tracked, or sold — ever.</p>
+          <button class="cta ghost" id="showPrivacy">Read our privacy promise</button>
+          <button class="cta ghost danger" id="eraseAll">Erase all my data</button>
         </div>
       </section>
     </main>
@@ -261,6 +349,83 @@
     </div>
   </div>
 
+  <!-- First-run privacy welcome -->
+  <div class="modal-backdrop center" id="privacyModal" hidden>
+    <div class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="privTitle">
+      <div class="priv-mark">
+        <div class="bloom small"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <h2 id="privTitle">Your body. Your data. 🔒</h2>
+      <div class="priv-body">
+        <p>Welcome to <strong>cycle</strong>. Before you begin, here's our promise about your privacy — because period and health data is some of the most personal data there is.</p>
+        <ul class="priv-list">
+          <li><strong>It lives on your phone.</strong> Everything you log — periods, symptoms, moods, intimacy, medications — is stored locally on this device, in this app. Full stop.</li>
+          <li><strong>No account, no cloud.</strong> There's no sign-up and no server. We never see your data because it never leaves your device.</li>
+          <li><strong>No tracking, no ads, no selling.</strong> There are zero analytics, trackers, or third-party advertisers. Your cycle is nobody's business but yours.</li>
+          <li><strong>You're in control.</strong> Export a copy anytime, or erase everything with one tap in Settings.</li>
+          <li><strong>One thing to know:</strong> because data is stored only here, clearing your browser/app data or deleting the app removes it. Use Export to keep a backup.</li>
+        </ul>
+        <p class="priv-fine">cycle is a wellness tool, not a medical device, and does not provide medical advice.</p>
+      </div>
+      <button class="cta" id="privacyAccept">Got it — let's go 💗</button>
+    </div>
+  </div>
+
+  <!-- Medication modal -->
+  <div class="modal-backdrop" id="medModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="medTitle">
+      <div class="modal-handle"></div>
+      <h2 id="medTitle">Add a reminder</h2>
+      <label class="field"><span>Name</span><input type="text" id="medName" placeholder="e.g. Birth control pill" /></label>
+      <label class="field"><span>Type</span>
+        <select id="medType" class="select">
+          <option value="Birth control">Birth control</option>
+          <option value="Pain relief">Pain relief</option>
+          <option value="Supplement">Supplement</option>
+          <option value="Other">Other</option>
+        </select>
+      </label>
+      <label class="field"><span>Time</span><input type="time" id="medTime" value="09:00" /></label>
+      <label class="field"><span>Repeats</span>
+        <select id="medFreq" class="select">
+          <option value="daily">Every day</option>
+          <option value="weekdays">Weekdays</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button class="cta ghost" id="medCancel">Cancel</button>
+        <button class="cta" id="medSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Health event modal -->
+  <div class="modal-backdrop" id="eventModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="evTitle">
+      <div class="modal-handle"></div>
+      <h2 id="evTitle">Add a health event</h2>
+      <label class="field"><span>Event</span>
+        <select id="evType" class="select">
+          <option value="IUD inserted">IUD inserted</option>
+          <option value="IUD removed">IUD removed</option>
+          <option value="Started birth control">Started birth control</option>
+          <option value="Stopped birth control">Stopped birth control</option>
+          <option value="Implant inserted">Implant inserted</option>
+          <option value="Doctor visit">Doctor / gyno visit</option>
+          <option value="Test / screening">Test / screening</option>
+          <option value="Other">Other</option>
+        </select>
+      </label>
+      <label class="field"><span>Date</span><input type="date" id="evDate" /></label>
+      <label class="field"><span>Note <em>(optional)</em></span><input type="text" id="evNote" placeholder="Anything to remember" /></label>
+      <div class="modal-actions">
+        <button class="cta ghost" id="evCancel">Cancel</button>
+        <button class="cta" id="evSave">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Install hint -->
   <div class="install-toast" id="installToast" hidden>
     <button class="install-close" id="installClose" aria-label="Dismiss">✕</button>
@@ -278,7 +443,7 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script src="./js/app.js?v=2"></script>
+  <script src="./js/app.js?v=3"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

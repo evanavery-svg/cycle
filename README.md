@@ -1,20 +1,28 @@
 # 🌸 cycle
 
-A gentle, private **period & cycle tracker** built as an installable Progressive Web App (PWA). Pink, minimalist, and designed to feel at home next to your favorite iOS apps.
+A gentle, private **period & cycle tracker** built as an installable Progressive Web App (PWA). Minimalist, beautifully animated, and designed to feel at home next to your favorite iOS apps.
 
-> **Not medical advice.** cycle is an app, not a doctor. Predictions are estimates and the PCOS self-check is an awareness tool, not a diagnosis. Always consult a healthcare professional for medical concerns.
+**Sync your life to your cycle.** cycle's headline feature is **cycle syncing** — phase-by-phase guidance on how to eat, move, focus, and care for yourself as your hormones shift through the menstrual, follicular, ovulation, and luteal phases.
+
+> **Not medical advice.** cycle is a wellness tool, not a doctor. Predictions are estimates and the PCOS self-check is an awareness tool, not a diagnosis. Always consult a healthcare professional for medical concerns.
 
 ## Features
 
-- **Smart calendar** — see logged periods, predicted next cycle, your fertile window, and your most fertile (ovulation) day at a glance.
-- **Cycle phase ring** — know what phase you're in (menstrual, follicular, ovulation, luteal) and what's coming next.
+- **🌙 Cycle syncing** — a phase-aware card on your home screen plus a full guide: what to eat, how to move, where to focus, and how to care for yourself in each of the four phases.
+- **Smart calendar** — logged periods, predicted next cycle, fertile window, and your most fertile (ovulation) day at a glance, plus health-event markers.
+- **Cycle phase ring** — know what phase you're in and what's coming next.
 - **Log period** — record current *or* past periods, with start and end dates.
 - **Daily log** — flow, ~20 symptoms, ~20 moods, intimacy & sex drive, vaginal discharge, digestion, and free-text notes.
 - **Monthly & yearly review** — period days, cycle stats, top symptoms, mood breakdown, and a month-by-month overview.
-- **Learn** — phase-by-phase exercise guidance, foods that feel good on your period, and a PCOS self-assessment checklist.
+- **🎨 Themes** — Blossom (pink, default), Underwater (calm ocean), and Cosmos (a dark, starry night). Switch anytime; your data is untouched.
+- **🔔 Notifications you control** — gentle reminders with a one-tap master off switch, a **discreet mode** that hides the word "period," and granular toggles. Reminders are checked when you open the app.
+- **💊 Medication reminders** — birth control, pain relief, supplements — with time and repeat schedule.
+- **📌 Health timeline** — log milestones like getting an IUD or starting/stopping birth control; they appear on your calendar.
+- **🍎 Apple Health** — import your Cycle Tracking data from an Apple Health export, and export an Apple Health–format file to bring back in (via the iOS *Import Health Data* Shortcut).
+- **🩺 PCOS self-check** — a simple awareness checklist (clearly not a diagnosis).
 - **Installable** — add it to your Home Screen for a full-screen, app-like experience. An in-app tip shows you how.
 - **Always fresh** — the service worker uses a network-first strategy, so the app updates on every launch when online, while still working offline.
-- **Private by design** — all data is stored locally on your device (`localStorage`). Nothing is sent anywhere.
+- **🔒 Private by design** — a first-run privacy explainer makes the promise clear: all data is stored locally on your device (`localStorage`). No account, no cloud, no tracking, no ads, no selling. Export a backup or erase everything in one tap.
 
 ## Run locally
 
@@ -45,3 +53,9 @@ icons/                  app icons (192, 512, maskable, apple-touch)
 ## Tech
 
 Plain HTML, CSS, and JavaScript. No frameworks, no dependencies, no tracking.
+
+## Version
+
+**v0.2** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
+
+© Avery LLC. All rights reserved.
