@@ -5,14 +5,14 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.2";
+  const APP_VERSION = "0.3";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
   const DEFAULTS = {
     periods: [], logs: {}, pcos: {}, meds: [], events: [],
     settings: {
-      cycleLength: 28, periodLength: 5, theme: "pink",
+      cycleLength: 28, periodLength: 5, theme: "pink", name: "",
       notif: { enabled: false, discreet: false, period: false, fertile: false }
     }
   };
@@ -350,6 +350,7 @@
     if (screen === "insights") renderReview();
     if (screen === "log") renderLog();
     if (screen === "settings") renderSettings();
+    if (screen === "home") renderGreeting();
   }
   $$(".tab").forEach(t => t.addEventListener("click", () => go(t.dataset.go)));
 
@@ -390,6 +391,27 @@
     }
     renderHero(p);
     renderSyncCard(p);
+    renderGreeting();
+  }
+
+  // Time-aware greeting shown on the home screen every launch.
+  function renderGreeting() {
+    const wrap = $("#greeting");
+    const line = $("#greetLine");
+    const name = (state.settings.name || "").trim();
+    const h = new Date().getHours();
+    const part = h < 5 ? "Hello" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    const emoji = h < 5 ? "🌙" : h < 12 ? "🌅" : h < 18 ? "☀️" : "🌙";
+    line.textContent = "";
+    if (name) {
+      line.append(`${part}, `);
+      const span = el("span", "gname");
+      span.textContent = name;
+      line.append(span, ` ${emoji}`);
+    } else {
+      line.textContent = `${part} ${emoji}`;
+    }
+    wrap.hidden = false;
   }
 
   // Phase-aware cycle-syncing card on the home screen.
@@ -1290,11 +1312,17 @@
 
   // ---------- Settings screen ----------
   function renderSettings() {
+    $("#setName").value = state.settings.name || "";
     renderThemeGrid();
     renderNotifSettings();
     renderMeds();
     renderEvents();
   }
+  $("#setName").addEventListener("input", (e) => {
+    state.settings.name = e.target.value.slice(0, 24);
+    save();
+    renderGreeting();
+  });
   $("#settingsBtn").addEventListener("click", () => go("settings"));
   $("#syncMore").addEventListener("click", () => go("learn"));
   $("#tgNotif").addEventListener("click", toggleNotif);
@@ -1325,8 +1353,12 @@
   function showPrivacy() { $("#privacyModal").hidden = false; }
   $("#showPrivacy").addEventListener("click", showPrivacy);
   $("#privacyAccept").addEventListener("click", () => {
+    const name = ($("#privName").value || "").trim().slice(0, 24);
+    if (name) { state.settings.name = name; save(); }
     $("#privacyModal").hidden = true;
     localStorage.setItem("cycle.welcomed", "1");
+    renderGreeting();
+    maybeShowInstall();
   });
 
   // ---------- Boot ----------

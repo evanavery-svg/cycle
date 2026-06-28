@@ -15,7 +15,7 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=3" />
+  <link rel="stylesheet" href="./css/styles.css?v=4" />
 
   <title>cycle</title>
 </head>
@@ -45,6 +45,9 @@
     <main class="screens">
       <!-- HOME / CALENDAR -->
       <section class="screen" id="screen-home" data-screen="home">
+        <div class="greeting" id="greeting" hidden>
+          <span class="greet-line" id="greetLine">Hello 🌸</span>
+        </div>
         <div class="hero card" id="phaseHero">
           <div class="hero-ring" id="heroRing">
             <svg viewBox="0 0 120 120" class="ring-svg">
@@ -225,6 +228,15 @@
       <!-- SETTINGS -->
       <section class="screen" id="screen-settings" data-screen="settings" hidden>
         <div class="card section">
+          <h3>About you 👋</h3>
+          <p class="lead">We'll use this to greet you each time you open cycle.</p>
+          <label class="field" style="margin-bottom:0">
+            <span>Your name</span>
+            <input type="text" id="setName" placeholder="Your name or nickname" maxlength="24" />
+          </label>
+        </div>
+
+        <div class="card section">
           <h3>Appearance 🎨</h3>
           <p class="lead">Pick a vibe. Your data stays exactly the same.</p>
           <div class="theme-grid" id="themeGrid"></div>
@@ -367,6 +379,10 @@
         </ul>
         <p class="priv-fine">cycle is a wellness tool, not a medical device, and does not provide medical advice.</p>
       </div>
+      <label class="field name-field">
+        <span>What should we call you?</span>
+        <input type="text" id="privName" placeholder="Your name or nickname" autocomplete="given-name" maxlength="24" />
+      </label>
       <button class="cta" id="privacyAccept">Got it — let's go 💗</button>
     </div>
   </div>
@@ -443,7 +459,7 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script src="./js/app.js?v=3"></script>
+  <script src="./js/app.js?v=4"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

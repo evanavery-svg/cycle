@@ -393,6 +393,12 @@ input, textarea { font-family: var(--font); }
 .app-footer .version { font-size: 12px; font-weight: 700; color: var(--pink-600); letter-spacing: .3px; }
 .app-footer .copyright { font-size: 11px; color: var(--muted); }
 
+/* ---------- Greeting ---------- */
+.greeting { padding: 2px 4px 12px; animation: fadeUp .5s; }
+.greet-line { font-size: 24px; font-weight: 800; line-height: 1.2; color: var(--ink); display: block; }
+.greet-line .gname { color: var(--rose); }
+.name-field { margin-top: 6px; margin-bottom: 4px; }
+
 /* ---------- Cycle syncing ---------- */
 .sync-card { background: linear-gradient(135deg, var(--card), var(--pink-50)); }
 .sync-head { display: flex; align-items: center; justify-content: space-between; }
