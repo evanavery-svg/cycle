@@ -31,11 +31,12 @@ A strict CSP (`default-src 'self'`, `script-src 'self'`, `connect-src 'self'`, `
 - JSON import shows a confirmation, then only copies known fields; all values are HTML-encoded at render (finding #1).
 - Apple Health import uses `DOMParser` (no HTML execution) and only extracts dates and a fixed set of enum values; it never injects free text into the DOM.
 
-## App lock (PIN + biometrics) — added in v0.6
+## App lock (PIN) — added in v0.6
 
 - An optional **PIN lock** gates the app on launch and when it returns from the background. The PIN is never stored: only a salted **SHA-256 hash** is kept, in a device-local key (`cycle.lock`) that is excluded from data export/import.
-- **Face ID / Touch ID** unlock is offered via the **WebAuthn platform authenticator** (`navigator.credentials`), feature-detected with `isUserVerifyingPlatformAuthenticatorAvailable()` so it only appears where the OS supports it. A successful assertion requires the OS to verify the user biometrically.
 - **Important — it is a screen lock, not encryption.** It stops someone who picks up your unlocked phone from opening the app (the realistic mobile threat). It does **not** encrypt the data: on a desktop browser, someone with devtools/`localStorage` access could still read the stored JSON. True at-rest protection requires deriving an encryption key from the PIN and encrypting the store (see below).
+
+> A WebAuthn-based Face ID / Touch ID unlock was trialled in v0.6 and **removed in v0.7** — platform-authenticator behavior was unreliable across PWA installs. The PIN is the supported lock.
 
 ## Residual risks (by design, documented for the user)
 

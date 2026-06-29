@@ -20,7 +20,7 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=7" />
+  <link rel="stylesheet" href="./css/styles.css?v=8" />
 
   <title>cycle</title>
 </head>
@@ -76,7 +76,7 @@
 
         <div class="card sync-card" id="syncCard">
           <div class="sync-head">
-            <h3>Cycle syncing <span class="beta">your edge</span></h3>
+            <h3>Cycle syncing</h3>
             <button class="sync-more" id="syncMore">Learn more ›</button>
           </div>
           <p class="sync-phase" id="syncPhase">—</p>
@@ -320,10 +320,6 @@
             <button class="switch" id="tgLock" role="switch" aria-checked="false"><span></span></button>
           </div>
           <div id="lockExtra" class="notif-options">
-            <div class="toggle-row" id="bioRow" hidden>
-              <div><strong>Unlock with Face ID / Touch ID</strong><span class="toggle-sub">Use your device's biometrics instead of typing</span></div>
-              <button class="switch" id="tgBio" role="switch" aria-checked="false"><span></span></button>
-            </div>
             <button class="cta ghost" id="changePin">Change PIN</button>
           </div>
           <p class="hint">A PIN locks the screen so others can't open cycle. It is a screen lock, not full encryption — see <strong>SECURITY.md</strong>.</p>
@@ -394,7 +390,6 @@
       <div class="pin-dots" id="lockDots"></div>
       <div class="lock-error" id="lockError"></div>
       <div class="keypad" id="lockKeypad"></div>
-      <button class="bio-btn" id="bioUnlock" hidden>🙂 Unlock with Face ID / Touch ID</button>
     </div>
   </div>
 
@@ -508,7 +503,7 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script src="./js/app.js?v=7"></script>
-  <script src="./js/sw-register.js?v=7"></script>
+  <script src="./js/app.js?v=8"></script>
+  <script src="./js/sw-register.js?v=8"></script>
 </body>
 </html>

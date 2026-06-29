@@ -22,7 +22,7 @@ A gentle, private **period & cycle tracker** built as an installable Progressive
 - **🩺 PCOS self-check** — a simple awareness checklist (clearly not a diagnosis).
 - **Installable** — add it to your Home Screen for a full-screen, app-like experience. An in-app tip shows you how.
 - **Always fresh** — the service worker uses a network-first strategy, so the app updates on every launch when online, while still working offline.
-- **🔐 App lock** — optional PIN lock on launch (and when returning from the background), with **Face ID / Touch ID** unlock via WebAuthn where the device supports it. A screen lock, not full encryption — see `SECURITY.md`.
+- **🔐 App lock** — optional PIN lock on launch (and when returning from the background). A screen lock, not full encryption — see `SECURITY.md`.
 - **👋 Personal greeting** — cycle asks your name on first launch and greets you with a time-aware hello (good morning/afternoon/evening) every time you open it. Editable anytime in Settings.
 - **🔒 Private by design** — a first-run privacy explainer makes the promise clear: all data is stored locally on your device (`localStorage`). No account, no cloud, no tracking, no ads, no selling. Export a backup or erase everything in one tap.
 
@@ -58,6 +58,6 @@ Plain HTML, CSS, and JavaScript. No frameworks, no dependencies, no tracking.
 
 ## Version
 
-**v0.6** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
+**v0.7** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
 
 © Avery LLC. All rights reserved.
