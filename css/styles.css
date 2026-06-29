@@ -28,7 +28,6 @@
     radial-gradient(800px 400px at 100% 100%, #f6ecff, transparent 60%),
     var(--bg);
   --splash-bg: linear-gradient(160deg, var(--pink-400), var(--rose));
-  --statusbar-bg: linear-gradient(180deg, var(--rose), var(--pink-500));
   --topbar-bg: rgba(255, 248, 251, 0.72);
   --tabbar-bg: rgba(255, 255, 255, 0.82);
   --accent-text: #fff;
@@ -59,7 +58,6 @@
     radial-gradient(900px 500px at 100% 100%, #cdebe2, transparent 60%),
     var(--bg);
   --splash-bg: linear-gradient(160deg, #3fb7c9, #0d7390 80%);
-  --statusbar-bg: linear-gradient(180deg, #0d7390, #18a3bd);
   --topbar-bg: rgba(241, 251, 252, 0.72);
   --tabbar-bg: rgba(255, 255, 255, 0.82);
 }
@@ -89,7 +87,6 @@
     radial-gradient(900px 500px at 100% 100%, #1a2b5e, transparent 55%),
     var(--bg);
   --splash-bg: radial-gradient(120% 120% at 50% 0%, #3a2e6b, #0e0a1f 75%);
-  --statusbar-bg: linear-gradient(180deg, #1a1535, #0e0a1f);
   --topbar-bg: rgba(14, 10, 31, 0.72);
   --tabbar-bg: rgba(26, 21, 53, 0.82);
   --accent-text: #14102b;
@@ -127,16 +124,6 @@ body {
   transition: background .5s ease;
 }
 .app { position: relative; z-index: 1; }
-
-/* Themed strip behind the iOS status bar / Dynamic Island.
- * Height collapses to 0 where there's no safe-area inset (desktop, most Android),
- * so it only appears on notch/Dynamic-Island iPhones in standalone mode. */
-.statusbar-scrim {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 45;
-  height: env(safe-area-inset-top, 0px);
-  background: var(--statusbar-bg);
-  pointer-events: none;
-}
 
 button { font-family: var(--font); cursor: pointer; border: none; background: none; color: inherit; }
 input, textarea { font-family: var(--font); }

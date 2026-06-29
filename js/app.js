@@ -5,7 +5,7 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.10";
+  const APP_VERSION = "0.11";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
