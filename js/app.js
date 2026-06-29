@@ -5,7 +5,7 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.7";
+  const APP_VERSION = "0.8";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
@@ -62,6 +62,15 @@
     const d = parse(s);
     const wd = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()];
     return `${wd}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+  }
+  function shortDate(s) {
+    const d = parse(s);
+    const wd = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+    return `${wd} ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+  }
+  function compactDate(s) {
+    const d = parse(s);
+    return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
   }
 
   // ---------- Catalogs ----------
@@ -446,16 +455,77 @@
       <div class="sync-tile"><div class="st-h">💗 Self-care</div><div class="st-b">${s.love}</div></div>`;
   }
 
+  // The big home hook: a clear, human read on where you are in your cycle.
+  function heroHook(p) {
+    if (!p) return {
+      eyebrow: "Welcome 🌸", big: "Let's begin", accent: "",
+      sub: "Track your last period and I'll show you exactly where you are.",
+      chips: []
+    };
+    const today = todayISO();
+    const dayInPeriod = daysBetween(p.cycleStart, today); // 0-based within current cycle
+    const cycleDay = dayInPeriod + 1;
+    const toNext = daysBetween(today, p.nextStart);
+    const ovDate = p.curOvulation >= today ? p.curOvulation : p.ovulation;
+    const chips = [
+      { t: `Next ${compactDate(p.nextStart)}` },
+      { t: `Ovulation ${compactDate(ovDate)}`, ov: true }
+    ];
+    const plural = (n) => n === 1 ? "" : "s";
+
+    // On your period
+    if (dayInPeriod < p.periodLen) {
+      const left = p.periodLen - dayInPeriod - 1;
+      return {
+        eyebrow: "You're on your period", big: `Day ${cycleDay}`, accent: "period",
+        sub: left <= 0 ? "Likely winding down today 🌸" : `About ${left} day${plural(left)} to go 🌙`,
+        chips
+      };
+    }
+    // Ovulation day
+    if (today === p.curOvulation) {
+      return { eyebrow: "Ovulation", big: "Today 🌸", accent: "ovul", sub: "Your most fertile day.", chips };
+    }
+    // Fertile window
+    if (today >= p.curFertileStart && today <= p.curFertileEnd) {
+      const toO = daysBetween(today, p.curOvulation);
+      return {
+        eyebrow: "Fertile window", accent: "fertile",
+        big: toO > 0 ? `${toO} day${plural(toO)}` : "Peak",
+        sub: toO > 0 ? "until ovulation — higher chance of conception" : "High chance of conception now.",
+        chips
+      };
+    }
+    // Follicular (after period, before fertile window)
+    if (dayInPeriod < daysBetween(p.cycleStart, p.curOvulation)) {
+      const toF = daysBetween(today, p.curFertileStart);
+      return {
+        eyebrow: "Follicular phase", big: `Day ${cycleDay}`, accent: "follicular",
+        sub: toF > 0 ? `Fertile window in ${toF} day${plural(toF)} ⚡` : "Energy is building ⚡",
+        chips
+      };
+    }
+    // Luteal — counting down to the next period
+    return {
+      eyebrow: "Period coming", accent: "luteal",
+      big: toNext <= 0 ? "Any day now" : `In ${toNext} day${plural(toNext)}`,
+      sub: toNext === 0 ? "Your period may start today 🌙" : `Expected ${shortDate(p.nextStart)}`,
+      chips
+    };
+  }
+
   function renderHero(p) {
-    const ph = phaseFor(p);
-    $("#heroPhase").textContent = ph.name;
-    $("#heroSub").textContent = ph.sub;
+    const h = heroHook(p);
+    $("#heroPhase").textContent = h.eyebrow;
+    $("#heroBig").textContent = h.big;
+    $("#heroSub").textContent = h.sub;
+    $("#phaseHero").setAttribute("data-accent", h.accent || "");
     const chipsWrap = $("#heroChips");
     chipsWrap.innerHTML = "";
-    ph.chips.forEach(c => {
-      const pill = el("span", "pill" + (c.ov ? " ov" : ""), c.t);
-      chipsWrap.appendChild(pill);
-    });
+    h.chips.forEach(c => chipsWrap.appendChild(el("span", "pill" + (c.ov ? " ov" : ""), c.t)));
+    // re-trigger the big-number pop
+    const bigEl = $("#heroBig");
+    bigEl.style.animation = "none"; void bigEl.offsetWidth; bigEl.style.animation = "";
 
     const ring = $("#ringFg");
     const dayEl = $("#ringDay");
@@ -467,7 +537,7 @@
       const circ = 2 * Math.PI * 52;
       ring.style.strokeDasharray = circ;
       requestAnimationFrame(() => (ring.style.strokeDashoffset = circ * (1 - frac)));
-      ring.style.stroke = ph.name.startsWith("Ovulation") ? "var(--ovul)" : "var(--pink-500)";
+      ring.style.stroke = (h.accent === "ovul" || h.accent === "fertile") ? "var(--ovul)" : "var(--pink-500)";
     } else {
       dayEl.textContent = "–";
       $("#ringLabel").textContent = "no data";
@@ -1363,6 +1433,22 @@
     toast("Everything erased");
   });
 
+  // ---------- Celebration ----------
+  function burst(emojis) {
+    const set = emojis || ["💗", "🌸", "✨", "💕", "🌙", "⭐"];
+    const c = $("#burst");
+    for (let i = 0; i < 16; i++) {
+      const s = el("span", null, set[i % set.length]);
+      s.style.left = (10 + Math.random() * 80) + "%";
+      s.style.bottom = (20 + Math.random() * 30) + "%";
+      s.style.fontSize = (16 + Math.random() * 16) + "px";
+      s.style.setProperty("--r", (Math.random() * 80 - 40) + "deg");
+      s.style.animationDelay = (Math.random() * 0.25) + "s";
+      c.appendChild(s);
+      setTimeout(() => s.remove(), 1800);
+    }
+  }
+
   // ---------- Privacy welcome ----------
   function showPrivacy() { $("#privacyModal").hidden = false; }
   $("#showPrivacy").addEventListener("click", showPrivacy);
@@ -1372,8 +1458,38 @@
     $("#privacyModal").hidden = true;
     localStorage.setItem("cycle.welcomed", "1");
     renderGreeting();
-    maybeShowInstall();
+    afterPrivacy();
   });
+
+  // ---------- Onboarding: track last period ----------
+  function afterPrivacy() {
+    if (!localStorage.getItem("cycle.onboarded") && (!state.periods || !state.periods.length)) showOnboard();
+    else maybeShowInstall();
+  }
+  function showOnboard() {
+    const back = todayISO();
+    $("#onboardDate").value = "";
+    $("#onboardDate").max = back;
+    $("#onboardModal").hidden = false;
+  }
+  function finishOnboard() {
+    localStorage.setItem("cycle.onboarded", "1");
+    $("#onboardModal").hidden = true;
+    maybeShowInstall();
+  }
+  $("#onboardSave").addEventListener("click", () => {
+    const start = $("#onboardDate").value;
+    if (!start) { toast("Pick the day it started"); return; }
+    if (parse(start) > parse(todayISO())) { toast("That date is in the future"); return; }
+    state.periods = state.periods.filter(p => p.start !== start);
+    state.periods.push({ start, end: "" });
+    save();
+    renderCalendar();
+    burst();
+    toast("Your cycle is mapped 🌸");
+    finishOnboard();
+  });
+  $("#onboardSkip").addEventListener("click", finishOnboard);
 
   // ---------- App lock (PIN) ----------
   const LOCK_KEY = "cycle.lock"; // device-specific, kept out of data export

@@ -8,6 +8,9 @@ A gentle, private **period & cycle tracker** built as an installable Progressive
 
 ## Features
 
+- **🪟 The home hook** — the moment you open cycle, a big, friendly read on exactly where you are: *"You're on your period — Day 3, about 2 days to go,"* or *"Period coming — in 8 days, expected Tue Jul 7,"* plus a fertile-window/ovulation countdown — wrapped around an animated cycle-day ring.
+- **🐱 Cozy & aesthetic** — a little sleeping cat naps on the home screen, drifting "z z z", with twinkling sparkles, a celebratory heart-burst when you map your cycle, and gentle motion throughout.
+- **✨ Friendly first run** — after the privacy welcome, cycle invites you to log your last period so predictions light up immediately (you can skip and do it later).
 - **🌙 Cycle syncing** — a phase-aware card on your home screen plus a full guide: what to eat, how to move, where to focus, and how to care for yourself in each of the four phases.
 - **Smart calendar** — logged periods, predicted next cycle, fertile window, and your most fertile (ovulation) day at a glance, plus health-event markers.
 - **Cycle phase ring** — know what phase you're in and what's coming next.
@@ -58,6 +61,6 @@ Plain HTML, CSS, and JavaScript. No frameworks, no dependencies, no tracking.
 
 ## Version
 
-**v0.7** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
+**v0.8** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
 
 © Avery LLC. All rights reserved.

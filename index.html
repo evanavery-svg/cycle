@@ -20,7 +20,7 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=8" />
+  <link rel="stylesheet" href="./css/styles.css?v=9" />
 
   <title>cycle</title>
 </head>
@@ -57,20 +57,43 @@
           <span class="greet-line" id="greetLine">Hello 🌸</span>
         </div>
         <div class="hero card" id="phaseHero">
-          <div class="hero-ring" id="heroRing">
-            <svg viewBox="0 0 120 120" class="ring-svg">
-              <circle class="ring-bg" cx="60" cy="60" r="52" />
-              <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52" />
-            </svg>
-            <div class="ring-center">
-              <div class="ring-day" id="ringDay">–</div>
-              <div class="ring-label" id="ringLabel">cycle day</div>
+          <div class="hero-sparkles" aria-hidden="true"><i>✦</i><i>✧</i><i>·</i><i>✦</i><i>✧</i></div>
+          <div class="hero-top">
+            <div class="hero-ring" id="heroRing">
+              <svg viewBox="0 0 120 120" class="ring-svg">
+                <circle class="ring-bg" cx="60" cy="60" r="52" />
+                <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52" />
+              </svg>
+              <div class="ring-center">
+                <div class="ring-day" id="ringDay">–</div>
+                <div class="ring-label" id="ringLabel">cycle day</div>
+              </div>
+            </div>
+            <div class="hero-info">
+              <div class="hero-eyebrow" id="heroPhase">Welcome</div>
+              <div class="hero-big" id="heroBig">🌸</div>
+              <div class="hero-sub" id="heroSub">Track your last period to begin</div>
+              <div class="hero-chips" id="heroChips"></div>
             </div>
           </div>
-          <div class="hero-info">
-            <div class="hero-phase" id="heroPhase">Welcome</div>
-            <div class="hero-sub" id="heroSub">Log your first period to begin</div>
-            <div class="hero-chips" id="heroChips"></div>
+          <div class="cozy-cat" aria-hidden="true">
+            <div class="zzz"><span>z</span><span>z</span><span>z</span></div>
+            <svg viewBox="0 0 120 84" class="cat-svg">
+              <path d="M96 60 C 116 60 116 30 92 34 C 106 40 102 54 88 52 Z" fill="#ff9ec4"/>
+              <ellipse cx="60" cy="56" rx="46" ry="24" fill="#ffc4dd"/>
+              <ellipse cx="64" cy="64" rx="34" ry="13" fill="#ffdcea"/>
+              <path d="M64 34 q6 10 2 22" stroke="#ff9ec4" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M78 38 q6 9 2 20" stroke="#ff9ec4" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <circle cx="34" cy="50" r="20" fill="#ffd6e6"/>
+              <path d="M16 40 L 12 20 L 32 34 Z" fill="#ff9ec4"/>
+              <path d="M34 33 L 52 20 L 54 42 Z" fill="#ff9ec4"/>
+              <path d="M19 37 L 17 25 L 29 34 Z" fill="#ffb3d1"/>
+              <path d="M37 34 L 48 26 L 50 40 Z" fill="#ffb3d1"/>
+              <path d="M24 50 q4 4 8 0" stroke="#7a2c52" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+              <path d="M38 50 q4 4 8 0" stroke="#7a2c52" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+              <path d="M33 56 l5 0 l-2.5 3 z" fill="#e23a78"/>
+              <path d="M20 56 H 8 M20 60 H 10" stroke="#ffb3d1" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
           </div>
         </div>
 
@@ -431,6 +454,22 @@
     </div>
   </div>
 
+  <!-- First-run: track last period -->
+  <div class="modal-backdrop center" id="onboardModal" hidden>
+    <div class="modal sheet onboard" role="dialog" aria-modal="true" aria-labelledby="onbTitle">
+      <div class="onboard-moon" aria-hidden="true">🌙</div>
+      <h2 id="onbTitle">Find your rhythm</h2>
+      <p class="hint">When did your <strong>last period start</strong>? This lets cycle map your phases and predict what's next. You can always change it later.</p>
+      <label class="field">
+        <span>Last period start date</span>
+        <input type="date" id="onboardDate" />
+      </label>
+      <p class="onboard-tip">💡 On your period right now? Pick the day it started.</p>
+      <button class="cta" id="onboardSave">Show me my cycle ✨</button>
+      <button class="cta ghost" id="onboardSkip">I'll do this later</button>
+    </div>
+  </div>
+
   <!-- Medication modal -->
   <div class="modal-backdrop" id="medModal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="medTitle">
@@ -502,8 +541,9 @@
   </div>
 
   <div class="toast" id="toast" hidden></div>
+  <div class="burst" id="burst" aria-hidden="true"></div>
 
-  <script src="./js/app.js?v=8"></script>
-  <script src="./js/sw-register.js?v=8"></script>
+  <script src="./js/app.js?v=9"></script>
+  <script src="./js/sw-register.js?v=9"></script>
 </body>
 </html>
