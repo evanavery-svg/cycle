@@ -61,6 +61,6 @@ Plain HTML, CSS, and JavaScript. No frameworks, no dependencies, no tracking.
 
 ## Version
 
-**v0.8** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
+**v0.9** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
 
 © Avery LLC. All rights reserved.

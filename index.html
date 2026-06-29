@@ -14,17 +14,20 @@
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="cycle" />
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/styles.css?v=9" />
+  <link rel="stylesheet" href="./css/styles.css?v=10" />
 
   <title>cycle</title>
 </head>
 <body>
+  <!-- Themed strip behind the iOS status bar / Dynamic Island -->
+  <div class="statusbar-scrim" aria-hidden="true"></div>
+
   <!-- Splash -->
   <div id="splash" class="splash">
     <div class="splash-mark">
@@ -543,7 +546,7 @@
   <div class="toast" id="toast" hidden></div>
   <div class="burst" id="burst" aria-hidden="true"></div>
 
-  <script src="./js/app.js?v=9"></script>
-  <script src="./js/sw-register.js?v=9"></script>
+  <script src="./js/app.js?v=10"></script>
+  <script src="./js/sw-register.js?v=10"></script>
 </body>
 </html>
