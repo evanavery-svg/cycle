@@ -342,8 +342,11 @@ input, textarea { font-family: var(--font); }
 .seg.wrap button { flex: 0 1 auto; }
 .seg button:active { transform: scale(.94); }
 .seg button.active { background: var(--pink-500); color: #fff; box-shadow: 0 4px 12px rgba(255,111,168,.35); }
-.seg.switch { background: var(--pink-100); padding: 5px; border-radius: 16px; margin-bottom: 16px; }
-.seg.switch button { background: transparent; box-shadow: none; }
+.seg.switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%;
+  background: var(--pink-100); padding: 5px; border-radius: 16px; margin-bottom: 16px;
+}
+.seg.switch button { min-width: 0; text-align: center; background: transparent; box-shadow: none; }
 .seg.switch button.active { background: var(--card); color: var(--rose); box-shadow: var(--shadow-soft); }
 
 .chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -5,7 +5,7 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.11";
+  const APP_VERSION = "0.12";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
@@ -1543,6 +1543,16 @@
   }
 
   // --- Lock screen (unlock flow) ---
+  // After entering the PIN, there's a grace window during which reopening the
+  // app won't ask for it again.
+  const GRACE_MS = 10 * 60 * 1000; // 10 minutes
+  function markUnlocked() { localStorage.setItem("cycle.unlockAt", String(Date.now())); }
+  function withinGrace() {
+    const t = parseInt(localStorage.getItem("cycle.unlockAt") || "0", 10);
+    return Date.now() - t < GRACE_MS;
+  }
+  function shouldLock() { return lockEnabled() && !withinGrace(); }
+
   let lockEntry = "";
   let onUnlocked = null;
   function showLockScreen(after) {
@@ -1563,7 +1573,7 @@
     renderDots($("#lockDots"), lockEntry.length);
     if (lockEntry.length === PIN_LEN) {
       const ok = await verifyPin(lockEntry);
-      if (ok) { hideLockScreen(); }
+      if (ok) { markUnlocked(); hideLockScreen(); }
       else {
         shake($("#lockDots"));
         $("#lockError").textContent = "Incorrect PIN. Try again.";
@@ -1627,6 +1637,7 @@
         const salt = randHex(16);
         const hash = await hashPin(pin, salt);
         saveLock({ hash, salt });
+        markUnlocked(); // they just proved identity — start the grace window
         closePinSetup(true);
       } else { setupState.step = "new"; setupState.first = ""; updateSetupPrompt(); fail("PINs didn't match. Start over."); }
     }
@@ -1661,14 +1672,14 @@
   });
   function clearLockConfig() { localStorage.removeItem(LOCK_KEY); }
 
-  // Re-lock when the app is sent to the background, so reopening asks again.
-  let lockedNow = false;
+  // Re-lock when the app returns from the background — but only after the grace
+  // window has elapsed since the last time the PIN was entered / the app was used.
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden" && lockEnabled()) {
-      lockedNow = true;
-    } else if (document.visibilityState === "visible" && lockedNow && lockEnabled()) {
-      lockedNow = false;
-      showLockScreen();
+    if (document.visibilityState === "hidden") {
+      // Keep the grace clock fresh while the app is genuinely in use (unlocked).
+      if (lockEnabled() && $("#lockScreen").hidden) markUnlocked();
+    } else if (document.visibilityState === "visible") {
+      if (shouldLock()) showLockScreen();
     }
   });
 
@@ -1691,7 +1702,7 @@
         if (!localStorage.getItem("cycle.welcomed")) setTimeout(showPrivacy, 350);
         else maybeShowInstall();
       };
-      if (lockEnabled()) showLockScreen(afterUnlock);
+      if (shouldLock()) showLockScreen(afterUnlock);
       else afterUnlock();
     }, 1400);
     checkReminders();
