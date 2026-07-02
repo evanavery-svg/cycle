@@ -9,7 +9,8 @@ A gentle, private **period & cycle tracker** built as an installable Progressive
 ## Features
 
 - **🪟 The home hook** — the moment you open cycle, a big, friendly read on exactly where you are: *"You're on your period — Day 3, about 2 days to go,"* or *"Period coming — in 8 days, expected Tue Jul 7,"* plus a fertile-window/ovulation countdown — wrapped around an animated cycle-day ring.
-- **🐱 Cozy & aesthetic** — a little sleeping cat naps on the home screen, drifting "z z z", with twinkling sparkles, a celebratory heart-burst when you map your cycle, and gentle motion throughout.
+- **🐱 Cozy & aesthetic** — a little sleeping cat naps on the home screen, drifting "z z z" (pet it — it gets happy), with twinkling sparkles, a celebratory heart-burst when you map your cycle, gentle haptic ticks on supported devices, and soft motion throughout.
+- **📈 Honest predictions** — the expected date comes with a confidence range (e.g. "Expected Jul 7 ±2d") once three cycles are logged, the yearly review charts each cycle's length plus your variation and shortest–longest spread, and the app never claims you're on your period unless you actually logged one — a predicted window shows "Any day now" instead.
 - **✨ Friendly first run** — after the privacy welcome, cycle invites you to log your last period so predictions light up immediately (you can skip and do it later).
 - **🌙 Cycle syncing** — a phase-aware card on your home screen plus a full guide: what to eat, how to move, where to focus, and how to care for yourself in each of the four phases.
 - **Smart calendar** — logged periods, predicted next cycle, fertile window, and your most fertile (ovulation) day at a glance, plus health-event markers.
@@ -61,6 +62,6 @@ Plain HTML, CSS, and JavaScript. No frameworks, no dependencies, no tracking.
 
 ## Version
 
-**v0.12** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
+**v0.13** — The version is shown in the app footer and is set by the `APP_VERSION` constant in `js/app.js`. It is bumped on every release (along with the asset cache-busting query strings and the service-worker cache name).
 
 © Avery LLC. All rights reserved.

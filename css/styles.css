@@ -260,7 +260,15 @@ input, textarea { font-family: var(--font); }
 @keyframes twinkleStar { 0%, 100% { opacity: 0; transform: scale(.6) rotate(0deg); } 50% { opacity: .9; transform: scale(1) rotate(20deg); } }
 
 /* Cozy sleeping cat */
-.cozy-cat { position: absolute; right: 12px; bottom: 6px; width: 74px; z-index: 3; pointer-events: none; }
+.cozy-cat { position: absolute; right: 12px; bottom: 6px; width: 74px; z-index: 3; cursor: pointer; }
+.cozy-cat.boop .cat-svg { animation: catBoop .7s cubic-bezier(.3,1.6,.4,1); }
+@keyframes catBoop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.14) rotate(-5deg); }
+  60% { transform: scale(.97) rotate(3deg); }
+  100% { transform: scale(1); }
+}
+.cat-heart { position: absolute; top: 4px; font-size: 13px; pointer-events: none; animation: floatZ 1.5s ease-out forwards; }
 .cat-svg { width: 100%; display: block; transform-origin: 60% 80%; animation: catBreathe 4s ease-in-out infinite; filter: drop-shadow(0 4px 8px rgba(226,58,120,.18)); }
 @keyframes catBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
 .zzz { position: absolute; top: -10px; left: 6px; }
@@ -379,6 +387,8 @@ input, textarea { font-family: var(--font); }
 .stat .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .bar-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
 .bar-row .name { width: 96px; font-size: 12px; color: var(--ink); font-weight: 600; flex: none; }
+.bar-row.wide .name { width: 122px; }
+.bar-row.wide .cnt { width: 32px; }
 .bar-track { flex: 1; height: 10px; background: var(--pink-50); border-radius: 999px; overflow: hidden; }
 .bar-fill { height: 100%; background: linear-gradient(90deg, var(--pink-400), var(--rose)); border-radius: 999px; animation: grow .8s cubic-bezier(.2,.8,.2,1); }
 .bar-row .cnt { width: 26px; text-align: right; font-size: 12px; color: var(--muted); }

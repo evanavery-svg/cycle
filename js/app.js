@@ -5,7 +5,7 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.12";
+  const APP_VERSION = "0.13";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
@@ -258,6 +258,25 @@
     };
   }
 
+  // Completed cycles: each pair of consecutive period starts (outliers excluded).
+  function cycleHistory() {
+    const ps = sortedPeriods();
+    const runs = [];
+    for (let i = 1; i < ps.length; i++) {
+      const len = daysBetween(ps[i - 1].start, ps[i].start);
+      if (len >= 18 && len <= 60) runs.push({ from: ps[i - 1].start, to: ps[i].start, len });
+    }
+    return runs;
+  }
+  // Spread of cycle lengths; needs 3+ completed cycles to say anything.
+  function cycleVariability() {
+    const lens = cycleHistory().map(r => r.len);
+    if (lens.length < 3) return null;
+    const avg = lens.reduce((a, b) => a + b, 0) / lens.length;
+    const sd = Math.sqrt(lens.reduce((a, b) => a + (b - avg) * (b - avg), 0) / lens.length);
+    return { n: lens.length, avg, sd, min: Math.min(...lens), max: Math.max(...lens) };
+  }
+
   function phaseFor(p) {
     if (!p) return { name: "Welcome", sub: "Log your first period to begin", chips: [] };
     const today = todayISO();
@@ -350,6 +369,10 @@
     if (html != null) e.innerHTML = html;
     return e;
   }
+  // Tiny haptic tick on supporting devices (no-op elsewhere, e.g. iOS Safari).
+  function buzz(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms || 8); } catch (e) { /* ignore */ }
+  }
   let toastTimer;
   function toast(msg) {
     const t = $("#toast");
@@ -436,6 +459,22 @@
     wrap.hidden = false;
   }
 
+  // Pet the cat: a happy bounce and a couple of floating hearts.
+  $("#cozyCat").addEventListener("click", () => {
+    const cat = $("#cozyCat");
+    buzz(12);
+    cat.classList.remove("boop");
+    void cat.offsetWidth;
+    cat.classList.add("boop");
+    for (let i = 0; i < 3; i++) {
+      const h = el("span", "cat-heart", ["💗", "🩷", "💕"][i]);
+      h.style.left = (12 + i * 22) + "px";
+      h.style.animationDelay = (i * 0.18) + "s";
+      cat.appendChild(h);
+      setTimeout(() => h.remove(), 1600 + i * 180);
+    }
+  });
+
   // Phase-aware cycle-syncing card on the home screen.
   function renderSyncCard(p) {
     const key = phaseKey(p);
@@ -473,12 +512,26 @@
     ];
     const plural = (n) => n === 1 ? "" : "s";
 
-    // On your period
-    if (dayInPeriod < p.periodLen) {
-      const left = p.periodLen - dayInPeriod - 1;
+    // On your period — only when today falls inside a *logged* period.
+    const curPeriod = state.periods.find(per => {
+      const end = per.end || addDays(per.start, p.periodLen - 1);
+      return today >= per.start && today <= end;
+    });
+    if (curPeriod) {
+      const dayOfPeriod = daysBetween(curPeriod.start, today) + 1;
+      const end = curPeriod.end || addDays(curPeriod.start, p.periodLen - 1);
+      const left = daysBetween(today, end);
       return {
-        eyebrow: "You're on your period", big: `Day ${cycleDay}`, accent: "period",
+        eyebrow: "You're on your period", big: `Day ${dayOfPeriod}`, accent: "period",
         sub: left <= 0 ? "Likely winding down today 🌸" : `About ${left} day${plural(left)} to go 🌙`,
+        chips
+      };
+    }
+    // Inside the predicted period window, but nothing logged yet — don't pretend.
+    if (dayInPeriod < p.periodLen) {
+      return {
+        eyebrow: "Period expected", big: "Any day now", accent: "period",
+        sub: "Log it when it starts and I'll adjust 🌸",
         chips
       };
     }
@@ -505,11 +558,14 @@
         chips
       };
     }
-    // Luteal — counting down to the next period
+    // Luteal — counting down to the next period, with a confidence range when
+    // there's enough history to know how regular the cycles are.
+    const v = cycleVariability();
+    const pm = v && Math.round(v.sd) >= 1 ? ` ±${Math.round(v.sd)}d` : "";
     return {
       eyebrow: "Period coming", accent: "luteal",
       big: toNext <= 0 ? "Any day now" : `In ${toNext} day${plural(toNext)}`,
-      sub: toNext === 0 ? "Your period may start today 🌙" : `Expected ${shortDate(p.nextStart)}`,
+      sub: toNext === 0 ? "Your period may start today 🌙" : `Expected ${shortDate(p.nextStart)}${pm}`,
       chips
     };
   }
@@ -614,6 +670,7 @@
       c.dataset.type = type;
       c.addEventListener("click", () => {
         c.classList.toggle("active");
+        buzz();
         c.style.transform = "scale(1.12)";
         setTimeout(() => (c.style.transform = ""), 130);
       });
@@ -635,6 +692,7 @@
     seg.addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b) return;
+      buzz();
       $$("button", seg).forEach(x => x.classList.toggle("active", x === b));
     });
   });
@@ -815,13 +873,30 @@
     const periodStarts = sortedPeriods().filter(p => p.start >= yStart && p.start <= yEnd);
     const totalPeriodDays = countPeriodDaysInRange(yStart, yEnd);
 
+    const v = cycleVariability();
     html += `
       <div class="stat-grid">
         <div class="stat"><div class="num">${periodStarts.length}</div><div class="lbl">Periods this year</div></div>
         <div class="stat"><div class="num">${totalPeriodDays}</div><div class="lbl">Total period days</div></div>
         <div class="stat"><div class="num">${avgCycleLength()}</div><div class="lbl">Avg cycle</div></div>
         <div class="stat"><div class="num">${avgPeriodLength()}</div><div class="lbl">Avg period length</div></div>
+        <div class="stat"><div class="num">${v ? "±" + Math.round(v.sd) + "d" : "—"}</div><div class="lbl">Cycle variation</div></div>
+        <div class="stat"><div class="num">${v ? v.min + "–" + v.max + "d" : "—"}</div><div class="lbl">Shortest–longest</div></div>
       </div>`;
+
+    // Cycle history — each completed cycle that ended this year, as labeled bars.
+    const hist = cycleHistory().filter(r => r.to >= yStart && r.to <= yEnd).slice(-8);
+    if (hist.length) {
+      const cap = Math.max(...hist.map(r => r.len));
+      const rows = hist.map(r => `
+        <div class="bar-row wide">
+          <span class="name">${esc(compactDate(r.from))} → ${esc(compactDate(r.to))}</span>
+          <span class="bar-track"><span class="bar-fill" style="width:${Math.round((r.len / cap) * 100)}%"></span></span>
+          <span class="cnt">${r.len}d</span>
+        </div>`).join("");
+      html += `<div class="card section"><h3>Cycle history</h3>${rows}
+        <p class="hint">Each bar is one full cycle, from period start to the next period start.${v && Math.round(v.sd) <= 2 ? " Nicely regular 🌸" : ""}</p></div>`;
+    }
 
     // Month grid
     html += `<div class="card section"><h3>Period days by month</h3><div class="year-grid">`;
@@ -1518,7 +1593,7 @@
     const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
     keys.forEach(k => {
       const b = el("button", null, k);
-      b.addEventListener("click", () => onKey(k));
+      b.addEventListener("click", () => { buzz(); onKey(k); });
       container.appendChild(b);
     });
     const left = el("button", "act", actionLabel || "");
@@ -1680,6 +1755,7 @@
       if (lockEnabled() && $("#lockScreen").hidden) markUnlocked();
     } else if (document.visibilityState === "visible") {
       if (shouldLock()) showLockScreen();
+      checkReminders(); // catch reminders that came due while backgrounded
     }
   });
 
