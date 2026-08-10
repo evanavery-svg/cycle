@@ -5,7 +5,7 @@
   "use strict";
 
   // ---------- App meta ----------
-  const APP_VERSION = "0.13";
+  const APP_VERSION = "0.14";
 
   // ---------- Storage ----------
   const KEY = "cycle.data.v1";
@@ -328,7 +328,7 @@
     const cls = [];
     // Logged actual period days
     for (const per of state.periods) {
-      const end = per.end || addDays(per.start, (state.settings.periodLength || 5) - 1);
+      const end = per.end || addDays(per.start, avgPeriodLength() - 1);
       if (dateStr >= per.start && dateStr <= end) { cls.push("period"); break; }
     }
     if (p && !cls.includes("period")) {
@@ -343,12 +343,13 @@
     }
     return cls;
   }
-  function hasLog(dateStr) {
-    const l = state.logs[dateStr];
+  // Does a log record actually hold anything the user entered?
+  function logHasContent(l) {
     if (!l) return false;
     return !!(l.flow || (l.symptoms && l.symptoms.length) || (l.moods && l.moods.length) ||
       l.sex || l.sexDrive || l.discharge || l.digestion || (l.notes && l.notes.trim()));
   }
+  function hasLog(dateStr) { return logHasContent(state.logs[dateStr]); }
 
   // ---------- DOM helpers ----------
   const $ = (s, r = document) => r.querySelector(s);
@@ -527,8 +528,11 @@
         chips
       };
     }
-    // Inside the predicted period window, but nothing logged yet — don't pretend.
-    if (dayInPeriod < p.periodLen) {
+    // Inside the predicted period window with nothing logged for this cycle yet —
+    // don't pretend it started. If a period WAS logged this cycle and has already
+    // ended, fall through to the follicular/fertile branches instead.
+    const loggedThisCycle = state.periods.some(per => per.start >= p.cycleStart && per.start <= today);
+    if (!loggedThisCycle && dayInPeriod < p.periodLen) {
       return {
         eyebrow: "Period expected", big: "Any day now", accent: "period",
         sub: "Log it when it starts and I'll adjust 🌸",
@@ -732,11 +736,13 @@
 
   $("#saveLog").addEventListener("click", () => {
     const data = collectLog();
-    state.logs[logDateStr] = data;
+    // Don't store a blank record — it would count toward "Days tracked".
+    if (logHasContent(data)) state.logs[logDateStr] = data;
+    else delete state.logs[logDateStr];
     // If flow was logged and no period covers this day, gently extend/create one.
     if (data.flow && data.flow !== "" && data.flow !== "spotting") {
       const covered = state.periods.some(p => {
-        const end = p.end || addDays(p.start, (state.settings.periodLength || 5) - 1);
+        const end = p.end || addDays(p.start, avgPeriodLength() - 1);
         return logDateStr >= p.start && logDateStr <= end;
       });
       if (!covered) {
@@ -845,9 +851,10 @@
   function countPeriodDaysInRange(start, end) {
     let count = 0;
     let d = start;
+    const fallbackLen = avgPeriodLength();
     while (d <= end) {
       const inPeriod = state.periods.some(p => {
-        const pe = p.end || addDays(p.start, (state.settings.periodLength || 5) - 1);
+        const pe = p.end || addDays(p.start, fallbackLen - 1);
         return d >= p.start && d <= pe;
       });
       const flow = state.logs[d] && state.logs[d].flow && state.logs[d].flow !== "spotting";
@@ -879,7 +886,7 @@
         <div class="stat"><div class="num">${periodStarts.length}</div><div class="lbl">Periods this year</div></div>
         <div class="stat"><div class="num">${totalPeriodDays}</div><div class="lbl">Total period days</div></div>
         <div class="stat"><div class="num">${avgCycleLength()}</div><div class="lbl">Avg cycle</div></div>
-        <div class="stat"><div class="num">${avgPeriodLength()}</div><div class="lbl">Avg period length</div></div>
+        <div class="stat"><div class="num">${avgPeriodLength()}d</div><div class="lbl">Avg period length</div></div>
         <div class="stat"><div class="num">${v ? "±" + Math.round(v.sd) + "d" : "—"}</div><div class="lbl">Cycle variation</div></div>
         <div class="stat"><div class="num">${v ? v.min + "–" + v.max + "d" : "—"}</div><div class="lbl">Shortest–longest</div></div>
       </div>`;
@@ -915,8 +922,8 @@
       html += `<div class="empty-note">No data for ${year} yet. 🌸</div>`;
     }
     body.innerHTML = html;
-    $("#yrPrev").addEventListener("click", () => { calYear--; renderReview(); });
-    $("#yrNext").addEventListener("click", () => { calYear++; renderReview(); });
+    $("#yrPrev").addEventListener("click", () => { calYear--; renderReview(); renderCalendar(); });
+    $("#yrNext").addEventListener("click", () => { calYear++; renderReview(); renderCalendar(); });
   }
 
   // ---------- Learn ----------
@@ -998,7 +1005,12 @@
       steps.innerHTML = `Open your browser menu and choose <strong>“Add to Home Screen”</strong> or <strong>“Install.”</strong>`;
       $("#installAndroid").hidden = true;
     }
-    setTimeout(() => (toastEl.hidden = false), 2500);
+    // Re-check on fire: an earlier pending timer must not resurrect a toast the
+    // user dismissed in the meantime.
+    setTimeout(() => {
+      if (localStorage.getItem("cycle.installDismissed")) return;
+      toastEl.hidden = false;
+    }, 2500);
   }
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
@@ -1148,6 +1160,7 @@
         renderCalendar();
         renderLog();
         renderPcos();
+        renderSettings(); // the import button lives on Settings — refresh it in place
         toast("Data imported 💗");
       } catch (e) {
         toast("Couldn't read that file");
@@ -1300,6 +1313,13 @@
         }
       }
     }
+    // Prune old dedupe keys so this never grows without bound. Every key ends in
+    // a YYYY-MM-DD; drop anything older than the cutoff.
+    const cutoff = addDays(today, -60);
+    for (const k of Object.keys(fired)) {
+      const d = k.slice(-10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d) && d < cutoff) delete fired[k];
+    }
     localStorage.setItem("cycle.fired", JSON.stringify(fired));
   }
   function dueToday(m, now) {
@@ -1387,7 +1407,7 @@
 
     const emit = [];
     state.periods.forEach(p => {
-      const end = p.end || addDays(p.start, (state.settings.periodLength || 5) - 1);
+      const end = p.end || addDays(p.start, avgPeriodLength() - 1);
       let d = p.start, idx = 0;
       while (d <= end) {
         const startDay = idx === 0;
@@ -1400,7 +1420,6 @@
         emit.push(`  <Record type="HKCategoryTypeIdentifierMenstrualFlow" sourceName="cycle" startDate="${fmtHK(parse(d), 9)}" endDate="${fmtHK(parse(d), 21)}" value="${flowMap[l.flow]}"><MetadataEntry key="HKMenstrualCycleStart" value="0"/></Record>`);
       }
       if (l.sex && l.sex !== "none") {
-        const prot = l.sex === "protected" ? "HKCategoryValueContraceptiveUnspecified" : "HKCategoryValueNotApplicable";
         emit.push(`  <Record type="HKCategoryTypeIdentifierSexualActivity" sourceName="cycle" startDate="${fmtHK(parse(d), 21)}" endDate="${fmtHK(parse(d), 21)}" value="HKCategoryValueNotApplicable"><MetadataEntry key="HKSexualActivityProtectionUsed" value="${l.sex === "protected" ? 1 : 0}"/></Record>`);
       }
     });
@@ -1424,11 +1443,18 @@
         const recs = [...doc.querySelectorAll('Record[type="HKCategoryTypeIdentifierMenstrualFlow"]')];
         const sex = [...doc.querySelectorAll('Record[type="HKCategoryTypeIdentifierSexualActivity"]')];
         if (!recs.length && !sex.length) { toast("No cycle records found in that file"); return; }
-        if (!confirm(`Found ${recs.length} period day(s) and ${sex.length} intimacy record(s). Add them to cycle?`)) return;
+
+        // Apple writes a "...MenstrualFlowNone" record for non-bleeding days inside
+        // a tracked cycle. Those aren't period days — importing them would collapse
+        // a whole cycle into one bogus month-long "period".
+        const flowDays = recs
+          .filter(r => !/None$/.test(r.getAttribute("value") || ""))
+          .map(r => (r.getAttribute("startDate") || "").slice(0, 10)).filter(Boolean).sort();
+        const uniq = [...new Set(flowDays)];
+        if (!uniq.length && !sex.length) { toast("No period days found in that file"); return; }
+        if (!confirm(`Found ${uniq.length} period day(s) and ${sex.length} intimacy record(s). Add them to cycle?`)) return;
 
         // Group menstrual-flow days into period ranges.
-        const flowDays = recs.map(r => (r.getAttribute("startDate") || "").slice(0, 10)).filter(Boolean).sort();
-        const uniq = [...new Set(flowDays)];
         let runStart = null, prev = null;
         const addRange = (s, e) => {
           if (!state.periods.some(p => p.start === s)) state.periods.push({ start: s, end: e });
@@ -1498,6 +1524,10 @@
     if (!confirm("Erase ALL your data on this device? This cannot be undone.")) return;
     localStorage.removeItem(KEY);
     localStorage.removeItem("cycle.fired");
+    // Also reset first-run state so erasing really does start over.
+    localStorage.removeItem("cycle.welcomed");
+    localStorage.removeItem("cycle.onboarded");
+    localStorage.removeItem("cycle.installDismissed");
     state = structuredClone(DEFAULTS);
     save();
     applyTheme();
@@ -1601,10 +1631,10 @@
     else left.classList.add("blank");
     container.appendChild(left);
     const zero = el("button", null, "0");
-    zero.addEventListener("click", () => onKey("0"));
+    zero.addEventListener("click", () => { buzz(); onKey("0"); });
     container.appendChild(zero);
     const del = el("button", "act", "⌫");
-    del.addEventListener("click", () => onKey("del"));
+    del.addEventListener("click", () => { buzz(); onKey("del"); });
     container.appendChild(del);
   }
   function renderDots(container, count) {

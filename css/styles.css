@@ -221,7 +221,7 @@ input, textarea { font-family: var(--font); }
 .ring-svg { width: 120px; height: 120px; transform: rotate(-90deg); }
 .ring-bg { fill: none; stroke: var(--pink-100); stroke-width: 10; }
 .ring-fg {
-  fill: none; stroke: url(#g); stroke: var(--pink-500); stroke-width: 10; stroke-linecap: round;
+  fill: none; stroke: var(--pink-500); stroke-width: 10; stroke-linecap: round;
   stroke-dasharray: 327; stroke-dashoffset: 327;
   transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1), stroke .4s;
 }
@@ -245,6 +245,8 @@ input, textarea { font-family: var(--font); }
 .hero[data-accent="period"] { background: linear-gradient(150deg, var(--card) 0%, #fff0f6 70%, #ffe0ee 100%); }
 .hero[data-accent="ovul"], .hero[data-accent="fertile"] { background: linear-gradient(150deg, var(--card) 0%, #f4efff 70%, #e9e1ff 100%); }
 .hero[data-accent="ovul"] .hero-eyebrow, .hero[data-accent="fertile"] .hero-eyebrow { color: var(--ovul); }
+.hero[data-accent="follicular"] { background: linear-gradient(150deg, var(--card) 0%, #fff6fa 70%, #ffeaf3 100%); }
+.hero[data-accent="luteal"] { background: linear-gradient(150deg, var(--card) 0%, #fdf3f8 70%, #f7e6f0 100%); }
 
 /* Sparkles */
 .hero-sparkles { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
@@ -299,7 +301,6 @@ input, textarea { font-family: var(--font); }
 }
 .cal-cell.empty { pointer-events: none; }
 .cal-cell:active { transform: scale(.88); }
-.cal-cell.muted { color: #d9c4cf; }
 .cal-cell.today { outline: 2px solid var(--pink-500); outline-offset: -2px; }
 .cal-cell.period { background: var(--pink-500); color: #fff; box-shadow: 0 4px 10px rgba(255,111,168,.4); }
 .cal-cell.predicted { background: var(--predicted); color: var(--rose); border: 1px dashed var(--pink-400); }
@@ -481,10 +482,11 @@ input, textarea { font-family: var(--font); }
 .toggle-row:first-of-type { border-top: none; }
 .toggle-row strong { display: block; font-size: 14px; }
 .toggle-sub { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
-.switch { width: 50px; height: 30px; border-radius: 999px; background: var(--line); flex: none; position: relative; transition: background .25s; }
-.switch span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.2); transition: transform .25s; }
-.switch[aria-checked="true"] { background: var(--pink-500); }
-.switch[aria-checked="true"] span { transform: translateX(20px); }
+/* Scoped to button so it can't collide with the review's `.seg.switch` track. */
+button.switch { width: 50px; height: 30px; border-radius: 999px; background: var(--line); flex: none; position: relative; transition: background .25s; }
+button.switch span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.2); transition: transform .25s; }
+button.switch[aria-checked="true"] { background: var(--pink-500); }
+button.switch[aria-checked="true"] span { transform: translateX(20px); }
 .notif-options { overflow: hidden; transition: max-height .3s ease, opacity .3s; }
 .notif-options.off { max-height: 0; opacity: .4; pointer-events: none; }
 #notifNote { color: var(--muted); }
@@ -502,7 +504,6 @@ input, textarea { font-family: var(--font); }
 .cta.danger { background: var(--pink-50); color: var(--rose); box-shadow: none; margin-top: 10px; }
 
 /* ---------- Calendar event marker ---------- */
-.cal-cell .marks i.ev { background: var(--ovul); }
 .cal-cell.has-event::after { content: ""; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--ovul); }
 
 /* ---------- Privacy / centered modal ---------- */
